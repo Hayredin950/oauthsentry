@@ -1,47 +1,154 @@
 "use client"
 
-import { useCallback, useState } from "react"
-import { ListChecks, Loader2, Play, RotateCcw } from "lucide-react"
+import { useCallback, useRef, useState } from "react"
+import { ListChecks, Loader2, Play, RotateCcw, Sparkles, TriangleAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { seedFindings, seedInventoryText } from "@/lib/seed-data"
-import type { RiskFinding } from "@/lib/types"
+import { seedInventoryText } from "@/lib/seed-data"
+import { parseInventory } from "@/lib/parse-inventory"
+import type { RiskFinding, StackAsset } from "@/lib/types"
 import { RiskResultsTable } from "@/components/risk-results-table"
 import { IocFeed } from "@/components/ioc-feed"
 
-type ScanState = "idle" | "scanning" | "done"
+type ScanState = "idle" | "scanning" | "done" | "error"
 
 export function RiskScanner() {
   const [inventory, setInventory] = useState(seedInventoryText)
   const [state, setState] = useState<ScanState>("idle")
   const [findings, setFindings] = useState<RiskFinding[]>([])
+  const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 })
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [activeAssetName, setActiveAssetName] = useState<string | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   const runScan = useCallback(async () => {
+    const assets = parseInventory(inventory)
+    if (assets.length === 0) {
+      setErrorMsg("No valid assets parsed. Use format: kind: name (identifier)")
+      setState("error")
+      return
+    }
+
     setState("scanning")
     setFindings([])
-    // Stream findings one at a time for a "live analysis" feel.
-    // Day 2 will replace this with a real AI SDK 6 streaming agent.
-    for (let i = 0; i < seedFindings.length; i++) {
-      await new Promise((r) => setTimeout(r, 280 + Math.random() * 160))
-      setFindings((prev) => [...prev, seedFindings[i]])
+    setErrorMsg(null)
+    setProgress({ done: 0, total: assets.length })
+    setActiveAssetName(assets[0]?.name ?? null)
+
+    const ac = new AbortController()
+    abortRef.current = ac
+
+    try {
+      const res = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assets }),
+        signal: ac.signal,
+      })
+
+      if (!res.ok || !res.body) {
+        const txt = await res.text().catch(() => "")
+        throw new Error(`Scan failed (${res.status}): ${txt || res.statusText}`)
+      }
+
+      // Parse NDJSON stream: one JSON object per line.
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ""
+      let queueIndex = 0
+
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split("\n")
+        buffer = lines.pop() ?? ""
+        for (const line of lines) {
+          const trimmed = line.trim()
+          if (!trimmed) continue
+          let evt: unknown
+          try {
+            evt = JSON.parse(trimmed)
+          } catch {
+            continue
+          }
+          handleEvent(evt as ScanEvent, assets, () => {
+            queueIndex += 1
+            setActiveAssetName(assets[queueIndex]?.name ?? null)
+          })
+        }
+      }
+      // flush any trailing line
+      const tail = buffer.trim()
+      if (tail) {
+        try {
+          handleEvent(JSON.parse(tail) as ScanEvent, assets, () => {})
+        } catch {
+          /* ignore */
+        }
+      }
+
+      setState("done")
+      setActiveAssetName(null)
+    } catch (err) {
+      if ((err as Error).name === "AbortError") return
+      console.log("[v0] scan error", (err as Error).message)
+      setErrorMsg((err as Error).message)
+      setState("error")
     }
-    setState("done")
+
+    function handleEvent(evt: ScanEvent, all: StackAsset[], onAdvance: () => void) {
+      if (evt.type === "finding") {
+        setFindings((prev) => [...prev, evt.finding])
+        setProgress((p) => ({ ...p, done: p.done + 1 }))
+        onAdvance()
+      } else if (evt.type === "error") {
+        // Surface a placeholder finding so the asset isn't silently dropped.
+        const fallback: RiskFinding = {
+          assetId: evt.assetId,
+          asset: evt.asset,
+          score: 0,
+          level: "info",
+          headline: "Could not analyze",
+          reasoning: `The agent encountered an error: ${evt.message}`,
+          factors: [{ label: "Analysis error", detail: evt.message }],
+          iocMatches: [],
+          recommendation: "Retry the scan, or analyze this asset manually.",
+          ticketStatus: "none",
+          alertStatus: "none",
+        }
+        setFindings((prev) => [...prev, fallback])
+        setProgress((p) => ({ ...p, done: p.done + 1 }))
+        onAdvance()
+      }
+    }
+  }, [inventory])
+
+  const cancel = useCallback(() => {
+    abortRef.current?.abort()
+    setState("idle")
+    setActiveAssetName(null)
   }, [])
 
   const reset = useCallback(() => {
+    abortRef.current?.abort()
     setState("idle")
     setFindings([])
+    setErrorMsg(null)
+    setProgress({ done: 0, total: 0 })
+    setActiveAssetName(null)
   }, [])
 
   const updateStatus = useCallback(
-    (assetId: string, key: "ticketStatus" | "alertStatus", from: "filing" | "sending", to: "filed" | "sent") => {
-      setFindings((prev) =>
-        prev.map((f) => (f.assetId === assetId ? { ...f, [key]: from } : f)),
-      )
+    (
+      assetId: string,
+      key: "ticketStatus" | "alertStatus",
+      from: "filing" | "sending",
+      to: "filed" | "sent",
+    ) => {
+      setFindings((prev) => prev.map((f) => (f.assetId === assetId ? { ...f, [key]: from } : f)))
       setTimeout(() => {
-        setFindings((prev) =>
-          prev.map((f) => (f.assetId === assetId ? { ...f, [key]: to } : f)),
-        )
+        setFindings((prev) => prev.map((f) => (f.assetId === assetId ? { ...f, [key]: to } : f)))
       }, 900)
     },
     [],
@@ -70,6 +177,8 @@ export function RiskScanner() {
     high: findings.filter((f) => f.level === "high").length,
   }
 
+  const inventoryItemCount = inventory.split("\n").filter((l) => l.trim() && !l.trim().startsWith("#")).length
+
   return (
     <section
       id="scan"
@@ -85,8 +194,8 @@ export function RiskScanner() {
             Audit your stack
           </h2>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Paste your inventory of OAuth apps, npm packages, and SaaS tools. We{"\u2019"}ll
-            cross-reference against live IOC sources and rank findings.
+            Paste your inventory of OAuth apps, npm packages, and SaaS tools. The agent calls
+            tools to match against IOCs, looks up vendor advisories, and ranks findings.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -108,7 +217,7 @@ export function RiskScanner() {
                 <h3 className="text-sm font-semibold tracking-tight">Inventory</h3>
               </div>
               <span className="font-mono text-[11px] text-muted-foreground">
-                {inventory.split("\n").filter(Boolean).length} items
+                {inventoryItemCount} items
               </span>
             </div>
             <Textarea
@@ -125,6 +234,11 @@ export function RiskScanner() {
                 One asset per line. Format: <code className="font-mono">kind: name (identifier)</code>
               </p>
               <div className="flex items-center gap-2">
+                {state === "scanning" ? (
+                  <Button onClick={cancel} variant="outline" size="sm">
+                    Cancel
+                  </Button>
+                ) : null}
                 <Button
                   onClick={runScan}
                   disabled={state === "scanning" || inventory.trim().length === 0}
@@ -136,30 +250,54 @@ export function RiskScanner() {
                   ) : (
                     <Play className="h-3.5 w-3.5" aria-hidden />
                   )}
-                  {state === "scanning" ? "Scanning\u2026" : "Run scan"}
+                  {state === "scanning" ? "Analyzing\u2026" : "Run scan"}
                 </Button>
               </div>
             </div>
           </div>
 
-          {state !== "idle" && (
+          {state === "error" && errorMsg && (
+            <div
+              role="alert"
+              className="flex items-start gap-2.5 rounded-lg border border-[var(--chart-1)]/40 bg-[var(--chart-1)]/5 px-4 py-3"
+            >
+              <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-[var(--chart-1)]" aria-hidden />
+              <div className="text-sm">
+                <p className="font-medium">Scan failed</p>
+                <p className="mt-0.5 text-muted-foreground">{errorMsg}</p>
+              </div>
+            </div>
+          )}
+
+          {(state === "scanning" || state === "done") && (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-4 py-3">
               <div className="flex flex-wrap items-center gap-3 text-sm">
                 <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Findings
+                  {state === "scanning" ? "Live" : "Findings"}
                 </span>
                 <span className="tabular-nums">
-                  <span className="font-semibold">{counts.total}</span>{" "}
+                  <span className="font-semibold">{progress.done}</span>
+                  <span className="text-muted-foreground">/{progress.total}</span>{" "}
                   <span className="text-muted-foreground">analyzed</span>
                 </span>
-                <span className="tabular-nums">
-                  <span className="font-semibold text-[var(--chart-1)]">{counts.critical}</span>{" "}
-                  <span className="text-muted-foreground">critical</span>
-                </span>
-                <span className="tabular-nums">
-                  <span className="font-semibold text-[var(--chart-2)]">{counts.high}</span>{" "}
-                  <span className="text-muted-foreground">high</span>
-                </span>
+                {counts.critical > 0 && (
+                  <span className="tabular-nums">
+                    <span className="font-semibold text-[var(--chart-1)]">{counts.critical}</span>{" "}
+                    <span className="text-muted-foreground">critical</span>
+                  </span>
+                )}
+                {counts.high > 0 && (
+                  <span className="tabular-nums">
+                    <span className="font-semibold text-[var(--chart-2)]">{counts.high}</span>{" "}
+                    <span className="text-muted-foreground">high</span>
+                  </span>
+                )}
+                {state === "scanning" && activeAssetName && (
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <Sparkles className="h-3 w-3 animate-pulse text-primary" aria-hidden />
+                    <span className="truncate">{`analyzing ${activeAssetName}\u2026`}</span>
+                  </span>
+                )}
               </div>
               {state === "done" && counts.critical + counts.high > 0 && (
                 <Button onClick={fileAllCriticalTickets} variant="outline" size="sm">
@@ -183,3 +321,11 @@ export function RiskScanner() {
     </section>
   )
 }
+
+// === Stream event types =====================================================
+
+type ScanEvent =
+  | { type: "start"; count: number }
+  | { type: "finding"; finding: RiskFinding }
+  | { type: "error"; assetId: string; asset: StackAsset; message: string }
+  | { type: "done" }
