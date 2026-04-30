@@ -7,9 +7,9 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Risk Radar — Third-party AI & OAuth threat intelligence',
+  title: 'OAuthSentry — Third-party AI & OAuth risk agent',
   description:
-    'Continuously audit your organization\u2019s exposure to compromised third-party AI tools, OAuth apps, and SaaS integrations. Inspired by the April 2026 Vercel/Context.ai incident.',
+    'Continuously audits your organization\u2019s OAuth apps, third-party AI integrations, and supply-chain dependencies against live IOC feeds and breach disclosures. Built on Vercel WDK + ChatSDK + AI SDK 6. Inspired by the April 2026 Vercel/Context.ai incident.',
   generator: 'v0.app',
   icons: {
     icon: [

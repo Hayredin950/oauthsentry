@@ -25,9 +25,10 @@ export function Hero() {
         </h1>
 
         <p className="max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
-          Risk Radar continuously audits your organization{"\u2019"}s OAuth apps, npm
-          dependencies, and SaaS integrations against live indicators of compromise.
-          High-risk findings file Linear tickets and ping Slack automatically.
+          OAuthSentry is a durable agent that continuously enumerates your OAuth apps,
+          third-party AI integrations, and supply-chain dependencies, then cross-references
+          them against live IOC feeds. High-risk findings file Linear tickets and page
+          Slack automatically.
         </p>
 
         <div className="flex flex-wrap items-center gap-3">

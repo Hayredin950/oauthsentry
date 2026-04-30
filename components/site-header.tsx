@@ -8,7 +8,7 @@ export function SiteHeader() {
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 ring-1 ring-inset ring-primary/30">
             <Radar className="h-4 w-4 text-primary" aria-hidden />
           </div>
-          <span className="text-sm font-semibold tracking-tight">Risk Radar</span>
+          <span className="text-sm font-semibold tracking-tight">OAuthSentry</span>
           <span className="ml-2 hidden rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground sm:inline">
             beta
           </span>

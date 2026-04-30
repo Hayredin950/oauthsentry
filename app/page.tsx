@@ -13,7 +13,7 @@ export default function Page() {
       <footer className="border-t border-border">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-8 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <p>
-            Risk Radar &mdash; built for{" "}
+            OAuthSentry &mdash; built for{" "}
             <a
               href="https://vercel.com/events/zero-to-agent"
               target="_blank"
@@ -24,7 +24,7 @@ export default function Page() {
             </a>
           </p>
           <p className="font-mono">
-            v0 + MCPs track &middot; AI SDK 6 &middot; Linear &middot; Slack
+            WDK Workflows + ChatSDK &middot; AI SDK 6 &middot; Linear &middot; Slack
           </p>
         </div>
       </footer>
