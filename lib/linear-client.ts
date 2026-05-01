@@ -67,8 +67,8 @@ export async function createLinearIssue(issue: LinearIssueInput): Promise<{ issu
     throw new Error(`Linear GraphQL error: ${data.errors[0].message}`)
   }
 
-  const { issue } = data.data.issueCreate
-  return { issueId: issue.id, url: issue.url }
+  const createdIssue = data.data.issueCreate.issue
+  return { issueId: createdIssue.id, url: createdIssue.url }
 }
 
 export async function fileTicketForFinding(
