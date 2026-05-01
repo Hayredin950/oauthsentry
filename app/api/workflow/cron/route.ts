@@ -2,8 +2,8 @@ import { oauthSentryWorkflow } from '../route'
 import { start } from 'workflow/api'
 
 /**
- * Optional: scheduled trigger (cron integration on Vercel).
- * Call this endpoint hourly/daily to keep scans running.
+ * Cron endpoint for OAuthSentry scheduled scans.
+ * Trigger via Vercel Cron (hourly/daily) to run continuous security audits.
  */
 export async function GET() {
   try {
