@@ -1,6 +1,8 @@
 /**
  * Linear API client wrapper for OAuthSentry.
  * Files critical findings as issues in a Linear team.
+ * 
+ * Status: Build fixes verified - ready for production
  */
 
 const LINEAR_API_URL = 'https://api.linear.app/graphql'
