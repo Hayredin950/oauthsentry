@@ -112,11 +112,17 @@ Return your structured finding now.`
   const parsed = result.experimental_output as z.infer<typeof riskFindingSchema>
 
   // Collect IOC IDs from tool calls (if available)
-  const iocMatches =
-    result.steps
-      ?.flatMap((step) => step.toolResults || [])
-      .filter((tr) => tr.toolName === 'matchIocs')
-      .flatMap((tr) => (tr.result as { matches: { id: string }[] }).matches.map((m) => m.id)) || []
+  const iocMatches: string[] = []
+  for (const step of result.steps || []) {
+    for (const tr of step.toolResults || []) {
+      if (tr.toolName === 'matchIocs') {
+        const toolResult = tr as { toolName: string; result: { matches: { id: string }[] } }
+        if (toolResult.result?.matches) {
+          iocMatches.push(...toolResult.result.matches.map((m) => m.id))
+        }
+      }
+    }
+  }
 
   return {
     assetId: asset.id,
