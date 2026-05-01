@@ -1,14 +1,16 @@
 "use client"
 
 import { useCallback, useRef, useState } from "react"
-import { ListChecks, Loader2, Play, RotateCcw, Sparkles, TriangleAlert } from "lucide-react"
+import { ListChecks, Loader2, Play, RotateCcw, Sparkles, TriangleAlert, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { seedInventoryText } from "@/lib/seed-data"
+import { demoFindings } from "@/lib/demo-findings"
 import { parseInventory } from "@/lib/parse-inventory"
 import type { RiskFinding, StackAsset } from "@/lib/types"
 import { RiskResultsTable } from "@/components/risk-results-table"
 import { IocFeed } from "@/components/ioc-feed"
+import { MetricsDashboard } from "@/components/metrics-dashboard"
 
 type ScanState = "idle" | "scanning" | "done" | "error"
 
@@ -19,6 +21,8 @@ export function RiskScanner() {
   const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 })
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [activeAssetName, setActiveAssetName] = useState<string | null>(null)
+  const [lastScanTime, setLastScanTime] = useState<Date | null>(null)
+  const [isDemo, setIsDemo] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
 
   const runScan = useCallback(async () => {
@@ -34,6 +38,7 @@ export function RiskScanner() {
     setErrorMsg(null)
     setProgress({ done: 0, total: assets.length })
     setActiveAssetName(assets[0]?.name ?? null)
+    setIsDemo(false)
 
     const ac = new AbortController()
     abortRef.current = ac
@@ -90,6 +95,7 @@ export function RiskScanner() {
 
       setState("done")
       setActiveAssetName(null)
+      setLastScanTime(new Date())
     } catch (err) {
       if ((err as Error).name === "AbortError") return
       console.log("[v0] scan error", (err as Error).message)
@@ -124,6 +130,30 @@ export function RiskScanner() {
       }
     }
   }, [inventory])
+
+  const runDemo = useCallback(async () => {
+    setState("scanning")
+    setFindings([])
+    setErrorMsg(null)
+    setIsDemo(true)
+    setLastScanTime(null)
+    
+    // Simulate streaming demo findings with staggered delay
+    const demoResults = demoFindings
+    let accumulated: RiskFinding[] = []
+    
+    for (let i = 0; i < demoResults.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, 400))
+      accumulated = [...accumulated, demoResults[i]]
+      setFindings(accumulated)
+      setProgress({ done: i + 1, total: demoResults.length })
+      setActiveAssetName(demoResults[i].asset.name)
+    }
+    
+    setState("done")
+    setActiveAssetName(null)
+    setLastScanTime(new Date())
+  }, [])
 
   const cancel = useCallback(() => {
     abortRef.current?.abort()
@@ -245,8 +275,21 @@ export function RiskScanner() {
               Reset
             </Button>
           )}
+          <Button onClick={runDemo} disabled={state === "scanning"} variant="outline" size="sm" className="gap-1.5">
+            <Zap className="h-3.5 w-3.5" aria-hidden />
+            Demo Mode
+          </Button>
         </div>
       </div>
+
+      {/* Metrics Dashboard */}
+      {(findings.length > 0 || lastScanTime) && (
+        <MetricsDashboard 
+          findings={findings} 
+          assetsScanned={inventoryItemCount}
+          lastUpdated={lastScanTime}
+        />
+      )}
 
       <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
         <div className="space-y-4">

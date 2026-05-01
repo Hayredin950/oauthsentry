@@ -11,11 +11,16 @@ import {
   ShieldCheck,
   Ticket,
   Webhook,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { RiskFinding, AssetKind } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { RiskScoreBadge } from "@/components/risk-score-badge"
+import { RiskTimelineComponent } from "@/components/risk-timeline"
+import { TeamCollaboration } from "@/components/team-collaboration"
 
 const kindIcon: Record<AssetKind, typeof Package> = {
   oauth_app: ShieldCheck,
@@ -39,6 +44,8 @@ export function RiskResultsTable({
   onSendAlert: (assetId: string) => void
 }) {
   const [open, setOpen] = useState<string | null>(findings[0]?.assetId ?? null)
+  const [remediationStatus, setRemediationStatus] = useState<Record<string, string>>({})
+  const [remediationDate, setRemediationDate] = useState<Record<string, string>>({})
 
   if (findings.length === 0) {
     return (
@@ -181,22 +188,193 @@ export function RiskResultsTable({
                         </div>
                       )}
 
+                      {/* Remediation Steps */}
+                      {f.remediationRecommendations && f.remediationRecommendations.length > 0 && (
+                        <div>
+                          <h4 className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
+                            Remediation Steps
+                          </h4>
+                          <ul className="space-y-1.5">
+                            {f.remediationRecommendations.map((step, i) => (
+                              <li key={i} className="flex gap-2 text-xs text-foreground">
+                                <span className="text-amber-600 font-semibold shrink-0">•</span>
+                                <span>{step}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Risk Timeline */}
+                      <RiskTimelineComponent timeline={f.timeline} detectedAt={f.detectedAt} />
+
+                      {/* Risk Factor Scoring Breakdown */}
+                      {f.riskFactorBreakdown && f.riskFactorBreakdown.length > 0 && (
+                        <div>
+                          <h4 className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
+                            Scoring Breakdown
+                          </h4>
+                          <div className="space-y-1.5">
+                            {f.riskFactorBreakdown.map((item, i) => {
+                              const percentage = Math.round((item.points / f.score) * 100)
+                              return (
+                                <div key={i} className="flex items-center gap-2">
+                                  <div className="flex-1 flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">{item.factor}</span>
+                                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                                      <div
+                                        className="h-full bg-amber-500/80"
+                                        style={{ width: `${percentage}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                  <span className="text-xs font-semibold text-foreground shrink-0">
+                                    {item.points}
+                                  </span>
+                                </div>
+                              )
+                            })}
+                            <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                              <span className="text-xs font-mono text-muted-foreground">Total Score</span>
+                              <span className="text-xs font-bold">{f.score}/100</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Threat Intelligence Sources */}
+                      {f.cveReferences && f.cveReferences.length > 0 && (
+                        <div>
+                          <h4 className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+                            Threat Intelligence
+                          </h4>
+                          <div className="mt-1.5 space-y-1.5">
+                            {f.cveReferences.map((ref, i) => (
+                              <div key={i} className="flex items-start gap-2 rounded bg-muted/60 p-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <code className="font-mono text-xs font-semibold text-blue-600">
+                                      {ref.id}
+                                    </code>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-700 font-medium">
+                                      CVSS {ref.score}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {ref.source}
+                                    </span>
+                                  </div>
+                                </div>
+                                <a
+                                  href={`https://nvd.nist.gov/vuln/detail/${ref.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline text-[10px] shrink-0"
+                                >
+                                  View
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {(f.level === "critical" || f.level === "high") && (
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          <ActionButton
-                            status={f.ticketStatus ?? "none"}
-                            icon={Ticket}
-                            doneLabel="Ticket filed"
-                            label="File Linear ticket"
-                            onClick={() => onFileTicket(f.assetId)}
-                          />
-                          <ActionButton
-                            status={f.alertStatus ?? "none"}
-                            icon={MessageSquareWarning}
-                            doneLabel="Slack sent"
-                            label="Send Slack alert"
-                            onClick={() => onSendAlert(f.assetId)}
-                          />
+                        <div className="space-y-3 pt-1">
+                          <div className="flex flex-wrap gap-2">
+                            <ActionButton
+                              status={f.ticketStatus ?? "none"}
+                              icon={Ticket}
+                              doneLabel="Ticket filed"
+                              label="File Linear ticket"
+                              onClick={() => onFileTicket(f.assetId)}
+                            />
+                            <ActionButton
+                              status={f.alertStatus ?? "none"}
+                              icon={MessageSquareWarning}
+                              doneLabel="Slack sent"
+                              label="Send Slack alert"
+                              onClick={() => onSendAlert(f.assetId)}
+                            />
+                          </div>
+
+                          {/* False Positive Flag */}
+                          <div className="rounded-lg border border-border/60 bg-background/60 p-3">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                defaultChecked={f.isFalsePositive || false}
+                                className="w-4 h-4 rounded border-border cursor-pointer"
+                              />
+                              <span className="text-xs font-medium text-muted-foreground">
+                                Mark as false positive
+                              </span>
+                            </label>
+                          </div>
+
+                          {/* Remediation Tracking */}
+                          <div className="rounded-lg border border-border/60 bg-background/60 p-3">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-medium text-muted-foreground">
+                                Remediation Status
+                              </p>
+                              <select
+                                value={remediationStatus[f.assetId] ?? "open"}
+                                onChange={(e) =>
+                                  setRemediationStatus({
+                                    ...remediationStatus,
+                                    [f.assetId]: e.target.value,
+                                  })
+                                }
+                                className="rounded bg-muted px-2 py-1 text-xs font-medium border border-border/60 cursor-pointer"
+                              >
+                                <option value="open">Open</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="resolved">Resolved</option>
+                              </select>
+                            </div>
+
+                            {(remediationStatus[f.assetId] === "in-progress" ||
+                              remediationStatus[f.assetId] === "resolved") && (
+                              <div className="mt-2 space-y-2">
+                                <div className="flex items-center gap-2 text-xs">
+                                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                                  <input
+                                    type="date"
+                                    value={remediationDate[f.assetId] ?? ""}
+                                    onChange={(e) =>
+                                      setRemediationDate({
+                                        ...remediationDate,
+                                        [f.assetId]: e.target.value,
+                                      })
+                                    }
+                                    className="rounded bg-muted px-2 py-1 text-xs border border-border/60"
+                                  />
+                                </div>
+                                {remediationStatus[f.assetId] === "resolved" && (
+                                  <p className="flex items-center gap-1.5 text-xs text-green-600">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    Marked as resolved
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Linked Ticket */}
+                          {f.linkedTicketUrl && (
+                            <a
+                              href={f.linkedTicketUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              View in Linear
+                            </a>
+                          )}
+
+                          {/* Team Collaboration */}
+                          <TeamCollaboration findingId={f.assetId} linkedTicketUrl={f.linkedTicketUrl} />
                         </div>
                       )}
                     </div>
