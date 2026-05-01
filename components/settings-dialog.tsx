@@ -42,6 +42,7 @@ export function SettingsDialog() {
           size="sm" 
           className="gap-2"
           onClick={handleLoad}
+          title="Optional: Configure your own API keys for testing"
         >
           <Settings className="h-4 w-4" />
           <span className="hidden sm:inline">Settings</span>
