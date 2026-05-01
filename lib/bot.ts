@@ -2,7 +2,7 @@ import { Chat } from 'chat'
 import { createSlackAdapter } from '@chat-adapter/slack'
 import { createMemoryState } from '@chat-adapter/state-memory'
 import { start } from 'workflow/api'
-import { oauthSentryWorkflow } from './workflow/route'
+import { oauthSentryWorkflow } from '@/app/api/workflow/route'
 
 // Initialize Chat SDK with Slack adapter and in-memory state (dev) or Redis (prod)
 export const bot = new Chat({

@@ -1,4 +1,4 @@
-import { oauthSentryWorkflow } from './route'
+import { oauthSentryWorkflow } from '../route'
 import { start } from 'workflow/api'
 
 /**
