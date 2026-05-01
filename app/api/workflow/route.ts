@@ -3,6 +3,23 @@ import { start } from 'workflow/api'
 import type { StackAsset } from '@/lib/types'
 
 /**
+ * Parse interval string (e.g., "1h", "30m", "1d") to milliseconds
+ */
+function parseInterval(interval: string): number {
+  const match = interval.match(/^(\d+)(s|m|h|d)$/)
+  if (!match) return 60 * 60 * 1000 // Default 1 hour
+  const value = parseInt(match[1], 10)
+  const unit = match[2]
+  switch (unit) {
+    case 's': return value * 1000
+    case 'm': return value * 60 * 1000
+    case 'h': return value * 60 * 60 * 1000
+    case 'd': return value * 24 * 60 * 60 * 1000
+    default: return 60 * 60 * 1000
+  }
+}
+
+/**
  * Step 1: Fetch or enumerate OAuth apps from Google Workspace Admin API.
  * In production, call admin.googleapis.com; for demo, return seed data.
  */
@@ -217,13 +234,14 @@ export async function oauthSentryWorkflow(scheduleInterval?: string) {
         console.log(`[OAuthSentry] Alert: ${critical.length} critical findings`)
       }
 
-      // Sleep before next iteration
-      console.log(`[OAuthSentry] Sleeping for ${interval} before next scan`)
-      await sleep(interval)
+      // Sleep before next iteration (convert interval string to milliseconds)
+      const sleepMs = parseInterval(interval)
+      console.log(`[OAuthSentry] Sleeping for ${interval} (${sleepMs}ms) before next scan`)
+      await sleep(sleepMs)
     } catch (err) {
       console.error(`[OAuthSentry] Error in iteration ${iterationCount}:`, err)
       // Retry after a shorter sleep on error (backoff pattern)
-      await sleep('5m')
+      await sleep(5 * 60 * 1000) // 5 minutes
     }
   }
 }
