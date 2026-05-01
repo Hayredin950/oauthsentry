@@ -1,8 +1,9 @@
 "use client"
 
 import { Code, ExternalLink } from "lucide-react"
+import { SiteHeader } from "@/components/site-header"
 
-export function ApiDocumentation() {
+export default function ApiDocumentation() {
   const endpoints = [
     {
       method: "POST",
@@ -42,8 +43,10 @@ export function ApiDocumentation() {
   ]
 
   return (
-    <div className="min-h-screen bg-background py-12">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6">
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
+      <div className="py-12">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-3">
             <Code className="h-6 w-6 text-amber-600" />
@@ -192,6 +195,7 @@ console.log(findings);`}
           </p>
         </section>
       </div>
+    </div>
     </div>
   )
 }
