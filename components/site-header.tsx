@@ -1,4 +1,5 @@
 import { Radar } from "lucide-react"
+import { SettingsDialog } from "@/components/settings-dialog"
 
 export function SiteHeader() {
   return (
@@ -29,9 +30,13 @@ export function SiteHeader() {
           >
             Bulletin
           </a>
+          <a href="/api-docs" className="transition hover:text-foreground">
+            API Docs
+          </a>
         </nav>
 
         <div className="flex items-center gap-2">
+          <SettingsDialog />
           <span className="flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1 text-xs">
             <span className="radar-pulse h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
             <span className="text-muted-foreground">Live</span>

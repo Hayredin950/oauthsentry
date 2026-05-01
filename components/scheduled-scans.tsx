@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Calendar, Clock, Mail, Save } from "lucide-react"
+import { Calendar, Clock, Mail, Save, Trash2, Edit } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface ScheduleConfig {
@@ -43,6 +43,16 @@ export function ScheduledScans() {
       includeRecommendations: false,
     },
   ])
+
+  const handleDelete = (index: number) => {
+    setSavedSchedules(savedSchedules.filter((_, i) => i !== index))
+  }
+
+  const handleEdit = (index: number) => {
+    setConfig(savedSchedules[index])
+    setSavedSchedules(savedSchedules.filter((_, i) => i !== index))
+    setIsOpen(true)
+  }
 
   const handleSave = () => {
     setSavedSchedules([...savedSchedules, config])
@@ -107,7 +117,24 @@ export function ScheduledScans() {
                     Next run: {getNextRunDate(schedule)}
                   </p>
                 </div>
-                <button className="text-xs text-blue-600 hover:underline">Edit</button>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => handleEdit(i)}
+                    className="text-xs text-blue-600 hover:underline inline-flex items-center gap-1"
+                    title="Edit schedule"
+                  >
+                    <Edit className="h-3 w-3" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(i)}
+                    className="text-xs text-red-600 hover:underline inline-flex items-center gap-1"
+                    title="Delete schedule"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Delete
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center flex-wrap gap-1 text-[10px]">
