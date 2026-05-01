@@ -1,3 +1,7 @@
+/**
+ * OAuthSentry Scan API - AI-powered security risk analysis
+ * Analyzes OAuth apps and dependencies against IOC feeds
+ */
 import { generateText, tool, Output } from 'ai'
 import { z } from 'zod'
 import { findIocMatches, findVendorAdvisories } from '@/lib/risk-knowledge'
@@ -104,13 +108,14 @@ Return your structured finding now.`
     output: Output.object({ schema: riskFindingSchema }),
   })
 
-  // Extract the parsed object from the result
-  const parsed = result.object as z.infer<typeof riskFindingSchema>
+  // Extract the parsed object from the result (AI SDK 6 uses experimental_output)
+  const parsed = result.experimental_output as z.infer<typeof riskFindingSchema>
 
   // Collect IOC IDs from tool calls (if available)
   const iocMatches =
-    result.toolResults
-      ?.filter((tr) => tr.toolName === 'matchIocs')
+    result.steps
+      ?.flatMap((step) => step.toolResults || [])
+      .filter((tr) => tr.toolName === 'matchIocs')
       .flatMap((tr) => (tr.result as { matches: { id: string }[] }).matches.map((m) => m.id)) || []
 
   return {
