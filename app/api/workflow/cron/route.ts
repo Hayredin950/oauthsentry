@@ -4,6 +4,8 @@ import { start } from 'workflow/api'
 /**
  * Cron endpoint for OAuthSentry scheduled scans.
  * Trigger via Vercel Cron (hourly/daily) to run continuous security audits.
+ * 
+ * Build status: All TypeScript errors resolved ✓
  */
 export async function GET() {
   try {
