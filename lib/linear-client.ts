@@ -42,7 +42,10 @@ async function fetchTeamId(apiKey: string, providedTeamId?: string): Promise<str
 
   const data = await res.json()
   if (data.errors) {
-    throw new Error(`Linear API error: ${data.errors[0].message}`)
+    const errorMsg = data.errors[0].message
+    const errorDetails = JSON.stringify(data.errors, null, 2)
+    console.error('[OAuthSentry] Linear fetchTeamId errors:', errorDetails)
+    throw new Error(`Linear API error: ${errorMsg}`)
   }
 
   const teamId = data.data?.teams?.edges?.[0]?.node?.id
@@ -83,6 +86,8 @@ export async function createLinearIssue(issue: LinearIssueInput): Promise<{ issu
     },
   }
 
+  console.log('[OAuthSentry] Creating Linear issue with:', JSON.stringify(variables, null, 2))
+
   const res = await fetch(LINEAR_API_URL, {
     method: 'POST',
     headers: {
@@ -98,7 +103,10 @@ export async function createLinearIssue(issue: LinearIssueInput): Promise<{ issu
 
   const data = await res.json()
   if (data.errors) {
-    throw new Error(`Linear GraphQL error: ${data.errors[0].message}`)
+    const errorMsg = data.errors[0].message
+    const errorDetails = JSON.stringify(data.errors, null, 2)
+    console.error('[OAuthSentry] Linear API errors:', errorDetails)
+    throw new Error(`Linear GraphQL error: ${errorMsg}`)
   }
 
   const createdIssue = data.data.issueCreate.issue
