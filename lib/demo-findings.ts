@@ -35,6 +35,42 @@ export const demoFindings: RiskFinding[] = [
       { id: "CVE-2026-0047", score: 9.8, source: "NVD" },
       { id: "GHSA-2026-1234", score: 10.0, source: "GitHub Advisory" },
     ],
+    detectedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    escalatedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    timeline: [
+      {
+        date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        level: "low",
+        score: 20,
+        event: "First detected in public advisory",
+      },
+      {
+        date: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+        level: "medium",
+        score: 45,
+        event: "Admin scopes identified in Context.ai app",
+      },
+      {
+        date: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+        level: "critical",
+        score: 95,
+        event: "Security breach disclosed - active exploitation confirmed",
+      },
+    ],
+    riskFactorBreakdown: [
+      { factor: "Compromise History", points: 35 },
+      { factor: "Access Vector", points: 25 },
+      { factor: "Affected Consumers", points: 20 },
+      { factor: "Vendor Trust Change", points: 15 },
+    ],
+    remediationRecommendations: [
+      "1. Immediately revoke all Context.ai OAuth permissions from Google Workspace",
+      "2. Audit and rotate all GCP service account keys associated with the app",
+      "3. Review Google Workspace audit logs for unauthorized access attempts",
+      "4. Notify all users to change their passwords immediately",
+      "5. Enable 2FA enforcement across entire organization",
+      "6. Contact Google Cloud Security team for incident investigation support",
+    ],
   },
   {
     assetId: "stalebot-pro",

@@ -33,6 +33,21 @@ export type RiskFinding = {
   remediationDate?: string // ISO timestamp when resolved
   linkedTicketUrl?: string // Link to Linear ticket
   cveReferences?: Array<{ id: string; score: number; source: string }>
+  timeline?: RiskTimeline[] // Timeline of risk level changes
+  detectedAt?: string // When first detected
+  escalatedAt?: string // When escalated to critical
+  isFalsePositive?: boolean // Mark as false positive
+  falsePositiveReason?: string // Why marked as FP
+  riskFactorBreakdown?: Array<{ factor: string; points: number }> // Scoring details
+  remediationRecommendations?: string[] // Step-by-step remediation steps
+  comparisonMetrics?: { severityRank: number; affectedOrgs: number; timeToExploit: string }
+}
+
+export type RiskTimeline = {
+  date: string // ISO timestamp
+  level: RiskLevel
+  score: number
+  event: string // e.g., "First detected", "Escalated to critical", "Breach disclosed"
 }
 
 export type IOC = {

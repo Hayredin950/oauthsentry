@@ -2,6 +2,10 @@
 
 import type { RiskFinding } from "@/lib/types"
 import { AlertTriangle, CheckCircle2, Clock, Database } from "lucide-react"
+import { RemediationScorecard } from "@/components/remediation-scorecard"
+import { ExportReport } from "@/components/export-report"
+import { RiskComparison } from "@/components/risk-comparison"
+import { ScheduledScans } from "@/components/scheduled-scans"
 
 interface MetricsDashboardProps {
   findings: RiskFinding[]
@@ -151,6 +155,20 @@ export function MetricsDashboard({ findings, assetsScanned, lastUpdated }: Metri
         <p className="text-xs text-muted-foreground">
           Last updated: <span className="font-medium text-foreground">{formatTime(lastUpdated)}</span>
         </p>
+      </div>
+
+      {/* Remediation Scorecard */}
+      <RemediationScorecard findings={findings} />
+
+      {/* Risk Comparison */}
+      <RiskComparison findings={findings} />
+
+      {/* Scheduled Scans */}
+      <ScheduledScans />
+
+      {/* Export Report */}
+      <div className="flex justify-end pt-2">
+        <ExportReport findings={findings} lastUpdated={lastUpdated ?? undefined} />
       </div>
     </div>
   )

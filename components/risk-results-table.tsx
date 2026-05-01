@@ -19,6 +19,8 @@ import { cn } from "@/lib/utils"
 import type { RiskFinding, AssetKind } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { RiskScoreBadge } from "@/components/risk-score-badge"
+import { RiskTimelineComponent } from "@/components/risk-timeline"
+import { TeamCollaboration } from "@/components/team-collaboration"
 
 const kindIcon: Record<AssetKind, typeof Package> = {
   oauth_app: ShieldCheck,
@@ -186,6 +188,60 @@ export function RiskResultsTable({
                         </div>
                       )}
 
+                      {/* Remediation Steps */}
+                      {f.remediationRecommendations && f.remediationRecommendations.length > 0 && (
+                        <div>
+                          <h4 className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
+                            Remediation Steps
+                          </h4>
+                          <ul className="space-y-1.5">
+                            {f.remediationRecommendations.map((step, i) => (
+                              <li key={i} className="flex gap-2 text-xs text-foreground">
+                                <span className="text-amber-600 font-semibold shrink-0">•</span>
+                                <span>{step}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Risk Timeline */}
+                      <RiskTimelineComponent timeline={f.timeline} detectedAt={f.detectedAt} />
+
+                      {/* Risk Factor Scoring Breakdown */}
+                      {f.riskFactorBreakdown && f.riskFactorBreakdown.length > 0 && (
+                        <div>
+                          <h4 className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
+                            Scoring Breakdown
+                          </h4>
+                          <div className="space-y-1.5">
+                            {f.riskFactorBreakdown.map((item, i) => {
+                              const percentage = Math.round((item.points / f.score) * 100)
+                              return (
+                                <div key={i} className="flex items-center gap-2">
+                                  <div className="flex-1 flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">{item.factor}</span>
+                                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                                      <div
+                                        className="h-full bg-amber-500/80"
+                                        style={{ width: `${percentage}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                  <span className="text-xs font-semibold text-foreground shrink-0">
+                                    {item.points}
+                                  </span>
+                                </div>
+                              )
+                            })}
+                            <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                              <span className="text-xs font-mono text-muted-foreground">Total Score</span>
+                              <span className="text-xs font-bold">{f.score}/100</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Threat Intelligence Sources */}
                       {f.cveReferences && f.cveReferences.length > 0 && (
                         <div>
@@ -239,6 +295,20 @@ export function RiskResultsTable({
                               label="Send Slack alert"
                               onClick={() => onSendAlert(f.assetId)}
                             />
+                          </div>
+
+                          {/* False Positive Flag */}
+                          <div className="rounded-lg border border-border/60 bg-background/60 p-3">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                defaultChecked={f.isFalsePositive || false}
+                                className="w-4 h-4 rounded border-border cursor-pointer"
+                              />
+                              <span className="text-xs font-medium text-muted-foreground">
+                                Mark as false positive
+                              </span>
+                            </label>
                           </div>
 
                           {/* Remediation Tracking */}
@@ -302,6 +372,9 @@ export function RiskResultsTable({
                               View in Linear
                             </a>
                           )}
+
+                          {/* Team Collaboration */}
+                          <TeamCollaboration findingId={f.assetId} linkedTicketUrl={f.linkedTicketUrl} />
                         </div>
                       )}
                     </div>
