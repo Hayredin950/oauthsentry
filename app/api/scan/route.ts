@@ -2,7 +2,7 @@
  * OAuthSentry Scan API - AI-powered security risk analysis
  * Analyzes OAuth apps and dependencies against IOC feeds
  */
-import { generateText, tool, Output } from 'ai'
+import { generateObject, tool } from 'ai'
 import { z } from 'zod'
 import { findIocMatches, findVendorAdvisories } from '@/lib/risk-knowledge'
 import { riskFindingSchema } from '@/lib/risk-schema'
@@ -25,55 +25,21 @@ const RequestSchema = z.object({
     .max(40),
 })
 
-// Tool 1: Match against IOC database
-const matchIocsT = tool({
-  description:
-    'Search the IOC threat feed for indicators matching an asset name or identifier. Returns matched IOC entries with severity, source, and summary.',
-  inputSchema: z.object({
-    name: z.string().describe('Asset name (e.g., "Context.ai", "stalebot-pro")'),
-    identifier: z.string().describe('OAuth client ID, npm package name, or domain (e.g., "110671459871-30f1spbu0hptbs60cb4vsmv79i7bbvqj.apps.googleusercontent.com")'),
-  }),
-  execute: async ({ name, identifier }) => {
-    const matches = findIocMatches({ identifier, name })
-    return {
-      count: matches.length,
-      matches: matches.map((ioc) => ({
-        id: ioc.id,
-        indicator: ioc.indicator,
-        title: ioc.title,
-        severity: ioc.severity,
-        source: ioc.source,
-        summary: ioc.summary,
-      })),
-    }
-  },
-})
-
-// Tool 2: Lookup vendor advisories
-const lookupAdvisoriesT = tool({
-  description:
-    'Search published security advisories and disclosures for a vendor. Returns recent CVEs, breaches, and risk announcements.',
-  inputSchema: z.object({
-    vendor: z
-      .string()
-      .describe('Vendor name (e.g., "Context.ai", "Linear", "Slack", "stalebot-pro", "evalrunner")'),
-  }),
-  execute: async ({ vendor }) => {
-    const advisories = findVendorAdvisories(vendor)
-    return {
-      count: advisories.length,
-      advisories: advisories.map((a) => ({
-        vendor: a.vendor,
-        date: a.date,
-        source: a.source,
-        severity: a.severity,
-        summary: a.summary,
-      })),
-    }
-  },
-})
-
 async function analyzeAsset(asset: StackAsset): Promise<RiskFinding> {
+  // Pre-fetch IOC matches and advisories to include in the prompt
+  const iocResults = findIocMatches({ identifier: asset.identifier, name: asset.name })
+  const advisoryResults = findVendorAdvisories(asset.name)
+
+  const iocContext = iocResults.length > 0
+    ? `\n\nIOC MATCHES FOUND (${iocResults.length}):\n` +
+      iocResults.map((ioc) => `- ${ioc.title} (${ioc.severity}): ${ioc.summary}`).join('\n')
+    : '\n\nNo IOC matches found.'
+
+  const advisoryContext = advisoryResults.length > 0
+    ? `\n\nSECURITY ADVISORIES (${advisoryResults.length}):\n` +
+      advisoryResults.map((a) => `- ${a.vendor} (${a.date}, ${a.severity}): ${a.summary}`).join('\n')
+    : '\n\nNo security advisories found.'
+
   const prompt = `You are a security risk analyst for an organization scanning their OAuth apps, npm dependencies, and SaaS integrations. 
 
 Analyze the following asset for security risk:
@@ -83,57 +49,42 @@ Analyze the following asset for security risk:
 ${asset.owner ? `- Owner: ${asset.owner}` : ''}
 ${asset.installedBy ? `- Installed By: ${asset.installedBy}` : ''}
 ${asset.scopes?.length ? `- Scopes: ${asset.scopes.join(', ')}` : ''}
+${iocContext}
+${advisoryContext}
 
-Use the available tools to:
-1. Check if this asset appears in any known IOCs (using matchIocs)
-2. Look up any published advisories or security disclosures (using lookupAdvisories)
-
-Based on tool results and your analysis, produce a risk finding with a score (0-100), level (critical/high/medium/low/info), and actionable recommendation.
+Based on the above information, produce a risk finding with:
+- score (0-100): Higher = more risky
+- level: critical (80-100), high (60-79), medium (40-59), low (20-39), info (0-19)
+- headline: Brief summary of the risk
+- reasoning: Detailed explanation
+- factors: Array of { label, detail } pairs explaining risk factors
+- recommendation: Actionable next steps
 
 ${asset.kind === 'oauth_app' ? 'For OAuth apps, weight heavily any IOC matches, administrative scope permissions, or recent disclosure of OAuth app compromise. Context.ai incident from April 2026 shows how a compromised OAuth app can pivot to internal systems.' : ''}
 ${asset.kind === 'npm_package' ? 'For npm packages, check for supply-chain attacks, maintainer abandonment, or known CVEs. Flag deprecated packages, packages with no recent updates, or those with suspicious post-install scripts.' : ''}
-${asset.kind === 'saas_tool' ? 'For SaaS tools, evaluate based on vendor security posture (SOC 2, ISO 27001), any recent breaches, and scope of access (email, code, secrets, customer data).' : ''}
+${asset.kind === 'saas_tool' ? 'For SaaS tools, evaluate based on vendor security posture (SOC 2, ISO 27001), any recent breaches, and scope of access (email, code, secrets, customer data).' : ''}`
 
-Return your structured finding now.`
-
-  const result = await generateText({
+  const result = await generateObject({
     model: 'openai/gpt-4o-mini',
-    tools: {
-      matchIocs: matchIocsT,
-      lookupAdvisories: lookupAdvisoriesT,
-    },
+    schema: riskFindingSchema,
     system:
       'You are a security risk analyst. Respond with structured JSON matching the requested schema. Be precise with risk scores and recommendations.',
     prompt,
-    output: Output.object({ schema: riskFindingSchema }),
   })
 
-  // Extract the parsed object from the result (AI SDK 6 uses experimental_output)
-  const parsed = result.experimental_output as z.infer<typeof riskFindingSchema>
-
-  // Collect IOC IDs from tool calls (if available)
-  const iocMatches: string[] = []
-  for (const step of result.steps || []) {
-    for (const tr of step.toolResults || []) {
-      if (tr.toolName === 'matchIocs') {
-        const toolResult = tr as { toolName: string; result: { matches: { id: string }[] } }
-        if (toolResult.result?.matches) {
-          iocMatches.push(...toolResult.result.matches.map((m) => m.id))
-        }
-      }
-    }
-  }
+  // Collect IOC IDs from the pre-fetched results
+  const iocMatches = iocResults.map((ioc) => ioc.id)
 
   return {
     assetId: asset.id,
     asset,
-    score: parsed.score,
-    level: parsed.level,
-    headline: parsed.headline,
-    reasoning: parsed.reasoning,
-    factors: parsed.factors,
+    score: result.object.score,
+    level: result.object.level,
+    headline: result.object.headline,
+    reasoning: result.object.reasoning,
+    factors: result.object.factors,
     iocMatches,
-    recommendation: parsed.recommendation,
+    recommendation: result.object.recommendation,
     ticketStatus: 'none',
     alertStatus: 'none',
   }
@@ -174,6 +125,7 @@ export async function POST(req: Request) {
           await delay(100)
         } catch (err) {
           console.error(`[v0] Error analyzing ${asset.name}:`, err)
+          analyzed++
           send({
             type: 'error',
             assetId: asset.id,
