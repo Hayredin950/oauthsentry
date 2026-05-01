@@ -104,14 +104,15 @@ export function RiskScanner() {
         onAdvance()
       } else if (evt.type === "error") {
         // Surface a placeholder finding so the asset isn't silently dropped.
+        const errorAsset = all.find((a) => a.id === evt.assetId)
         const fallback: RiskFinding = {
           assetId: evt.assetId,
-          asset: evt.asset,
+          asset: errorAsset ?? { id: evt.assetId, kind: "oauth_app", name: evt.assetName, identifier: "" },
           score: 0,
           level: "info",
           headline: "Could not analyze",
-          reasoning: `The agent encountered an error: ${evt.message}`,
-          factors: [{ label: "Analysis error", detail: evt.message }],
+          reasoning: `The agent encountered an error: ${evt.error}`,
+          factors: [{ label: "Analysis error", detail: evt.error }],
           iocMatches: [],
           recommendation: "Retry the scan, or analyze this asset manually.",
           ticketStatus: "none",
@@ -365,6 +366,6 @@ export function RiskScanner() {
 
 type ScanEvent =
   | { type: "start"; count: number }
-  | { type: "finding"; finding: RiskFinding }
-  | { type: "error"; assetId: string; asset: StackAsset; message: string }
-  | { type: "done" }
+  | { type: "finding"; finding: RiskFinding; analyzed: number; total: number }
+  | { type: "error"; assetId: string; assetName: string; error: string }
+  | { type: "done"; analyzed: number }
