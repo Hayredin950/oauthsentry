@@ -1,19 +1,58 @@
 /**
  * Linear API client wrapper for OAuthSentry.
  * Files critical findings as issues in a Linear team.
- * 
- * Status: Build fixes verified - ready for production
+ * Auto-discovers team ID from workspace - no configuration needed.
  */
-
 const LINEAR_API_URL = 'https://api.linear.app/graphql'
 
 interface LinearIssueInput {
-  teamId: string
+  teamId?: string
   title: string
   description: string
   priority: number // 1-4: urgent, high, medium, low
   assigneeId?: string
   labels?: string[]
+}
+
+/**
+ * Fetch user's first team ID if not provided
+ */
+async function fetchTeamId(apiKey: string, providedTeamId?: string): Promise<string> {
+  if (providedTeamId) return providedTeamId
+
+  const query = `
+    query GetTeams {
+      teams(first: 1) {
+        edges {
+          node {
+            id
+            name
+          }
+        }
+      }
+    }
+  `
+
+  const res = await fetch(LINEAR_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ query }),
+  })
+
+  const data = await res.json()
+  if (data.errors) {
+    throw new Error(`Linear API error: ${data.errors[0].message}`)
+  }
+
+  const teamId = data.data?.teams?.edges?.[0]?.node?.id
+  if (!teamId) {
+    throw new Error('No teams found in Linear workspace')
+  }
+
+  return teamId
 }
 
 export async function createLinearIssue(issue: LinearIssueInput): Promise<{ issueId: string; url: string }> {
@@ -22,10 +61,7 @@ export async function createLinearIssue(issue: LinearIssueInput): Promise<{ issu
     throw new Error('LINEAR_API_KEY not set')
   }
 
-  const teamId = process.env.LINEAR_TEAM_ID || issue.teamId
-  if (!teamId) {
-    throw new Error('LINEAR_TEAM_ID not set')
-  }
+  const teamId = await fetchTeamId(apiKey, issue.teamId || process.env.LINEAR_TEAM_ID)
 
   const mutation = `
     mutation CreateIssue($input: IssueCreateInput!) {
@@ -80,7 +116,6 @@ export async function fileTicketForFinding(
     const priority = riskFinding.level === 'critical' ? 1 : riskFinding.level === 'high' ? 2 : 3
 
     const issue = await createLinearIssue({
-      teamId: process.env.LINEAR_TEAM_ID!,
       title: `[${riskFinding.level.toUpperCase()}] ${riskFinding.headline}`,
       description:
         `Asset: ${riskFinding.asset.name} (${riskFinding.asset.kind})\n` +
@@ -96,9 +131,11 @@ export async function fileTicketForFinding(
       labels: [riskFinding.level, riskFinding.asset.kind],
     })
 
-    
+    console.log('[OAuthSentry] Linear ticket created:', issue.issueId, issue.url)
     return { success: true, issueId: issue.issueId, url: issue.url }
   } catch (err) {
-    return { success: false, error: (err as Error).message }
+    const error = err as Error
+    console.error('[OAuthSentry] Failed to file Linear ticket:', error.message)
+    return { success: false, error: error.message }
   }
 }
