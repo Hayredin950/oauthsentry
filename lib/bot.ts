@@ -21,23 +21,27 @@ export const bot = new Chat({
  * Triggers a manual scan and posts a status message.
  */
 bot.onSlashCommand('/oauthsentry', async (event) => {
-  const { thread } = event
+  // Get thread from event - ChatSDK uses respond() for slash commands
+  const respond = event.respond
 
   // Acknowledge immediately
-  await thread.post('OAuthSentry: Starting security scan... please wait.')
+  await respond('OAuthSentry: Starting security scan... please wait.')
 
   try {
     // Trigger the WDK workflow
     const run = await start(oauthSentryWorkflow, [])
+    const runId = typeof run === 'object' && run !== null && 'runId' in run 
+      ? (run as { runId: string }).runId 
+      : String(run)
 
     // Post status with run ID (users can check progress later)
-    await thread.post(
-      `Scan initiated (Run ID: ${run.runId}). ` +
+    await respond(
+      `Scan initiated (Run ID: ${runId}). ` +
       `Critical findings will be posted here when the scan completes. ` +
       `Check back in a few minutes.`,
     )
   } catch (err) {
-    await thread.post(`Error starting scan: ${(err as Error).message}`)
+    await respond(`Error starting scan: ${(err as Error).message}`)
   }
 })
 
