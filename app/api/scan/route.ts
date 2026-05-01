@@ -1,3 +1,7 @@
+/**
+ * OAuthSentry Scan API - AI-powered security risk analysis
+ * Analyzes OAuth apps and dependencies against IOC feeds
+ */
 import { generateText, tool, Output } from 'ai'
 import { z } from 'zod'
 import { findIocMatches, findVendorAdvisories } from '@/lib/risk-knowledge'
