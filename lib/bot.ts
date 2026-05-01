@@ -56,24 +56,33 @@ bot.onNewMention(async (thread, message) => {
 
 /**
  * Auto-alert: when critical findings are detected (called from WDK workflow).
- * Posts a card-based alert to a designated channel or thread.
+ * Posts a message to a designated Slack channel via webhook.
  */
 export async function postCriticalAlert(
   channel: string,
   findings: Array<{ asset: { name: string }; headline: string; level: string; score: number }>,
 ) {
   try {
-    const thread = bot.getThread({
-      adapter: 'slack',
-      channelId: channel,
-      threadId: '',
-    })
+    // Use Slack webhook URL for direct posting (fallback if bot thread API unavailable)
+    const webhookUrl = process.env.SLACK_WEBHOOK_URL
+    if (!webhookUrl) {
+      console.warn('[OAuthSentry] SLACK_WEBHOOK_URL not set, skipping alert')
+      return
+    }
 
     const message =
       `🚨 OAuthSentry Alert: ${findings.length} critical finding(s)\n\n` +
       findings.map((f) => `• ${f.asset.name}: ${f.headline} (${f.level}, score ${f.score})`).join('\n')
 
-    await thread.post(message)
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: message }),
+    })
+
+    if (!response.ok) {
+      console.error('[OAuthSentry] Slack webhook failed:', response.statusText)
+    }
   } catch (err) {
     console.error('[OAuthSentry] Failed to post critical alert:', err)
   }
