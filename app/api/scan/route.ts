@@ -112,13 +112,14 @@ Return your structured finding now.`
   const parsed = result.experimental_output as z.infer<typeof riskFindingSchema>
 
   // Collect IOC IDs from tool calls (if available)
+  // AI SDK 6 uses 'output' instead of 'result' for tool results
   const iocMatches: string[] = []
   for (const step of result.steps || []) {
     for (const tr of step.toolResults || []) {
       if (tr.toolName === 'matchIocs') {
-        const toolResult = tr as { toolName: string; result: { matches: { id: string }[] } }
-        if (toolResult.result?.matches) {
-          iocMatches.push(...toolResult.result.matches.map((m) => m.id))
+        const output = (tr as unknown as { output: { matches: { id: string }[] } }).output
+        if (output?.matches) {
+          iocMatches.push(...output.matches.map((m) => m.id))
         }
       }
     }
