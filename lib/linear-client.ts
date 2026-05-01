@@ -96,6 +96,7 @@ export async function fileTicketForFinding(
       labels: [riskFinding.level, riskFinding.asset.kind],
     })
 
+    
     return { success: true, issueId: issue.issueId, url: issue.url }
   } catch (err) {
     return { success: false, error: (err as Error).message }
