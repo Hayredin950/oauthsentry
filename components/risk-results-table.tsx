@@ -11,6 +11,9 @@ import {
   ShieldCheck,
   Ticket,
   Webhook,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { RiskFinding, AssetKind } from "@/lib/types"
@@ -39,6 +42,8 @@ export function RiskResultsTable({
   onSendAlert: (assetId: string) => void
 }) {
   const [open, setOpen] = useState<string | null>(findings[0]?.assetId ?? null)
+  const [remediationStatus, setRemediationStatus] = useState<Record<string, string>>({})
+  const [remediationDate, setRemediationDate] = useState<Record<string, string>>({})
 
   if (findings.length === 0) {
     return (
@@ -181,22 +186,122 @@ export function RiskResultsTable({
                         </div>
                       )}
 
+                      {/* Threat Intelligence Sources */}
+                      {f.cveReferences && f.cveReferences.length > 0 && (
+                        <div>
+                          <h4 className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+                            Threat Intelligence
+                          </h4>
+                          <div className="mt-1.5 space-y-1.5">
+                            {f.cveReferences.map((ref, i) => (
+                              <div key={i} className="flex items-start gap-2 rounded bg-muted/60 p-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <code className="font-mono text-xs font-semibold text-blue-600">
+                                      {ref.id}
+                                    </code>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-700 font-medium">
+                                      CVSS {ref.score}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {ref.source}
+                                    </span>
+                                  </div>
+                                </div>
+                                <a
+                                  href={`https://nvd.nist.gov/vuln/detail/${ref.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline text-[10px] shrink-0"
+                                >
+                                  View
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {(f.level === "critical" || f.level === "high") && (
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          <ActionButton
-                            status={f.ticketStatus ?? "none"}
-                            icon={Ticket}
-                            doneLabel="Ticket filed"
-                            label="File Linear ticket"
-                            onClick={() => onFileTicket(f.assetId)}
-                          />
-                          <ActionButton
-                            status={f.alertStatus ?? "none"}
-                            icon={MessageSquareWarning}
-                            doneLabel="Slack sent"
-                            label="Send Slack alert"
-                            onClick={() => onSendAlert(f.assetId)}
-                          />
+                        <div className="space-y-3 pt-1">
+                          <div className="flex flex-wrap gap-2">
+                            <ActionButton
+                              status={f.ticketStatus ?? "none"}
+                              icon={Ticket}
+                              doneLabel="Ticket filed"
+                              label="File Linear ticket"
+                              onClick={() => onFileTicket(f.assetId)}
+                            />
+                            <ActionButton
+                              status={f.alertStatus ?? "none"}
+                              icon={MessageSquareWarning}
+                              doneLabel="Slack sent"
+                              label="Send Slack alert"
+                              onClick={() => onSendAlert(f.assetId)}
+                            />
+                          </div>
+
+                          {/* Remediation Tracking */}
+                          <div className="rounded-lg border border-border/60 bg-background/60 p-3">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-medium text-muted-foreground">
+                                Remediation Status
+                              </p>
+                              <select
+                                value={remediationStatus[f.assetId] ?? "open"}
+                                onChange={(e) =>
+                                  setRemediationStatus({
+                                    ...remediationStatus,
+                                    [f.assetId]: e.target.value,
+                                  })
+                                }
+                                className="rounded bg-muted px-2 py-1 text-xs font-medium border border-border/60 cursor-pointer"
+                              >
+                                <option value="open">Open</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="resolved">Resolved</option>
+                              </select>
+                            </div>
+
+                            {(remediationStatus[f.assetId] === "in-progress" ||
+                              remediationStatus[f.assetId] === "resolved") && (
+                              <div className="mt-2 space-y-2">
+                                <div className="flex items-center gap-2 text-xs">
+                                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                                  <input
+                                    type="date"
+                                    value={remediationDate[f.assetId] ?? ""}
+                                    onChange={(e) =>
+                                      setRemediationDate({
+                                        ...remediationDate,
+                                        [f.assetId]: e.target.value,
+                                      })
+                                    }
+                                    className="rounded bg-muted px-2 py-1 text-xs border border-border/60"
+                                  />
+                                </div>
+                                {remediationStatus[f.assetId] === "resolved" && (
+                                  <p className="flex items-center gap-1.5 text-xs text-green-600">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    Marked as resolved
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Linked Ticket */}
+                          {f.linkedTicketUrl && (
+                            <a
+                              href={f.linkedTicketUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              View in Linear
+                            </a>
+                          )}
                         </div>
                       )}
                     </div>

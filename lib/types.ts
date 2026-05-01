@@ -29,6 +29,10 @@ export type RiskFinding = {
   recommendation: string
   ticketStatus?: "none" | "filed" | "filing"
   alertStatus?: "none" | "sent" | "sending"
+  remediationStatus?: "open" | "in-progress" | "resolved"
+  remediationDate?: string // ISO timestamp when resolved
+  linkedTicketUrl?: string // Link to Linear ticket
+  cveReferences?: Array<{ id: string; score: number; source: string }>
 }
 
 export type IOC = {
