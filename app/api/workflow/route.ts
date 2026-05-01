@@ -233,12 +233,16 @@ export async function oauthSentryWorkflow(scheduleInterval?: string) {
  */
 export async function POST(req: Request) {
   try {
-    const { trigger } = await req.json()
+    const body = await req.json().catch(() => ({}))
+    const trigger = (body as { trigger?: string }).trigger
 
     if (trigger === 'manual-scan') {
       // Start a one-off workflow run
       const run = await start(oauthSentryWorkflow, [])
-      return Response.json({ runId: run.runId, status: 'started' })
+      const runId = typeof run === 'object' && run !== null && 'runId' in run 
+        ? (run as { runId: string }).runId 
+        : String(run)
+      return Response.json({ runId, status: 'started' })
     }
 
     return Response.json({ error: 'Unknown trigger' }, { status: 400 })
