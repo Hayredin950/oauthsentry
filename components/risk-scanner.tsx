@@ -155,12 +155,51 @@ export function RiskScanner() {
   )
 
   const handleFileTicket = useCallback(
-    (assetId: string) => updateStatus(assetId, "ticketStatus", "filing", "filed"),
-    [updateStatus],
+    async (assetId: string) => {
+      const finding = findings.find((f) => f.assetId === assetId)
+      if (!finding) return
+
+      updateStatus(assetId, "ticketStatus", "filing", "filed")
+
+      try {
+        const res = await fetch('/api/actions/file-ticket', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ finding }),
+        })
+        const data = await res.json()
+        if (!data.success) {
+          console.error('[v0] file ticket error:', data.error)
+        }
+      } catch (err) {
+        console.error('[v0] file ticket fetch error:', err)
+      }
+    },
+    [findings, updateStatus],
   )
+
   const handleSendAlert = useCallback(
-    (assetId: string) => updateStatus(assetId, "alertStatus", "sending", "sent"),
-    [updateStatus],
+    async (assetId: string) => {
+      const finding = findings.find((f) => f.assetId === assetId)
+      if (!finding) return
+
+      updateStatus(assetId, "alertStatus", "sending", "sent")
+
+      try {
+        const res = await fetch('/api/actions/send-alert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ finding }),
+        })
+        const data = await res.json()
+        if (!data.success) {
+          console.error('[v0] send alert error:', data.error)
+        }
+      } catch (err) {
+        console.error('[v0] send alert fetch error:', err)
+      }
+    },
+    [findings, updateStatus],
   )
 
   const fileAllCriticalTickets = useCallback(() => {

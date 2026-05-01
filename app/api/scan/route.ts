@@ -1,18 +1,15 @@
-import { z } from "zod"
-import { seedFindings } from "@/lib/seed-data"
-import type { RiskFinding, StackAsset } from "@/lib/types"
-
-// Day 1: deterministic mock streamer. No AI calls, no API keys required.
-// The streaming contract (NDJSON: { type: "start" | "finding" | "error" | "done" })
-// is identical to what the Day 2 AI SDK 6 agent will use, so the client
-// component will work unchanged when we swap in the real agent.
+import { generateText, tool, Output } from 'ai'
+import { z } from 'zod'
+import { findIocMatches, findVendorAdvisories } from '@/lib/risk-knowledge'
+import { riskFindingSchema } from '@/lib/risk-schema'
+import type { StackAsset, RiskFinding } from '@/lib/types'
 
 const RequestSchema = z.object({
   assets: z
     .array(
       z.object({
         id: z.string(),
-        kind: z.enum(["oauth_app", "npm_package", "saas_tool"]),
+        kind: z.enum(['oauth_app', 'npm_package', 'saas_tool']),
         name: z.string(),
         identifier: z.string(),
         owner: z.string().nullable().optional(),
@@ -24,33 +21,110 @@ const RequestSchema = z.object({
     .max(40),
 })
 
-// Look up a seed finding for a posted asset by name OR identifier match.
-// This lets the textarea behave the same whether the user keeps the seed
-// data, edits it, or pastes their own.
-function findSeedFinding(asset: StackAsset): RiskFinding | undefined {
-  const nameKey = asset.name.toLowerCase().trim()
-  const idKey = asset.identifier.toLowerCase().trim()
-  return seedFindings.find(
-    (f) =>
-      f.asset.name.toLowerCase() === nameKey ||
-      f.asset.identifier.toLowerCase() === idKey,
-  )
-}
+// Tool 1: Match against IOC database
+const matchIocsT = tool({
+  description:
+    'Search the IOC threat feed for indicators matching an asset name or identifier. Returns matched IOC entries with severity, source, and summary.',
+  inputSchema: z.object({
+    name: z.string().describe('Asset name (e.g., "Context.ai", "stalebot-pro")'),
+    identifier: z.string().describe('OAuth client ID, npm package name, or domain (e.g., "110671459871-30f1spbu0hptbs60cb4vsmv79i7bbvqj.apps.googleusercontent.com")'),
+  }),
+  execute: async ({ name, identifier }) => {
+    const matches = findIocMatches({ identifier, name })
+    return {
+      count: matches.length,
+      matches: matches.map((ioc) => ({
+        id: ioc.id,
+        indicator: ioc.indicator,
+        title: ioc.title,
+        severity: ioc.severity,
+        source: ioc.source,
+        summary: ioc.summary,
+      })),
+    }
+  },
+})
 
-function defaultCleanFinding(asset: StackAsset): RiskFinding {
+// Tool 2: Lookup vendor advisories
+const lookupAdvisoriesT = tool({
+  description:
+    'Search published security advisories and disclosures for a vendor. Returns recent CVEs, breaches, and risk announcements.',
+  inputSchema: z.object({
+    vendor: z
+      .string()
+      .describe('Vendor name (e.g., "Context.ai", "Linear", "Slack", "stalebot-pro", "evalrunner")'),
+  }),
+  execute: async ({ vendor }) => {
+    const advisories = findVendorAdvisories(vendor)
+    return {
+      count: advisories.length,
+      advisories: advisories.map((a) => ({
+        vendor: a.vendor,
+        date: a.date,
+        source: a.source,
+        severity: a.severity,
+        summary: a.summary,
+      })),
+    }
+  },
+})
+
+async function analyzeAsset(asset: StackAsset): Promise<RiskFinding> {
+  const prompt = `You are a security risk analyst for an organization scanning their OAuth apps, npm dependencies, and SaaS integrations. 
+
+Analyze the following asset for security risk:
+- Kind: ${asset.kind}
+- Name: ${asset.name}
+- Identifier: ${asset.identifier}
+${asset.owner ? `- Owner: ${asset.owner}` : ''}
+${asset.installedBy ? `- Installed By: ${asset.installedBy}` : ''}
+${asset.scopes?.length ? `- Scopes: ${asset.scopes.join(', ')}` : ''}
+
+Use the available tools to:
+1. Check if this asset appears in any known IOCs (using matchIocs)
+2. Look up any published advisories or security disclosures (using lookupAdvisories)
+
+Based on tool results and your analysis, produce a risk finding with a score (0-100), level (critical/high/medium/low/info), and actionable recommendation.
+
+${asset.kind === 'oauth_app' ? 'For OAuth apps, weight heavily any IOC matches, administrative scope permissions, or recent disclosure of OAuth app compromise. Context.ai incident from April 2026 shows how a compromised OAuth app can pivot to internal systems.' : ''}
+${asset.kind === 'npm_package' ? 'For npm packages, check for supply-chain attacks, maintainer abandonment, or known CVEs. Flag deprecated packages, packages with no recent updates, or those with suspicious post-install scripts.' : ''}
+${asset.kind === 'saas_tool' ? 'For SaaS tools, evaluate based on vendor security posture (SOC 2, ISO 27001), any recent breaches, and scope of access (email, code, secrets, customer data).' : ''}
+
+Return your structured finding now.`
+
+  const result = await generateText({
+    model: 'openai/gpt-4o-mini',
+    tools: {
+      matchIocs: matchIocsT,
+      lookupAdvisories: lookupAdvisoriesT,
+    },
+    system:
+      'You are a security risk analyst. Respond with structured JSON matching the requested schema. Be precise with risk scores and recommendations.',
+    prompt,
+    output: Output.object({ schema: riskFindingSchema }),
+  })
+
+  // Extract the parsed object from the result
+  const parsed = result.object as z.infer<typeof riskFindingSchema>
+
+  // Collect IOC IDs from tool calls (if available)
+  const iocMatches =
+    result.toolResults
+      ?.filter((tr) => tr.toolName === 'matchIocs')
+      .flatMap((tr) => (tr.result as { matches: { id: string }[] }).matches.map((m) => m.id)) || []
+
   return {
     assetId: asset.id,
     asset,
-    score: 8,
-    level: "info",
-    headline: "No known issues",
-    reasoning:
-      "No matching IOCs in the current threat feed. (Day 1 mock — Day 2 will run this through the AI SDK 6 tool-calling agent for real analysis.)",
-    factors: [{ label: "Clean", detail: "No advisories matched" }],
-    iocMatches: [],
-    recommendation: "Continue monitoring.",
-    ticketStatus: "none",
-    alertStatus: "none",
+    score: parsed.score,
+    level: parsed.level,
+    headline: parsed.headline,
+    reasoning: parsed.reasoning,
+    factors: parsed.factors,
+    iocMatches,
+    recommendation: parsed.recommendation,
+    ticketStatus: 'none',
+    alertStatus: 'none',
   }
 }
 
@@ -64,7 +138,7 @@ export async function POST(req: Request) {
     body = RequestSchema.parse(await req.json())
   } catch (err) {
     return Response.json(
-      { error: "Invalid request", detail: (err as Error).message },
+      { error: 'Invalid request', detail: (err as Error).message },
       { status: 400 },
     )
   }
@@ -73,30 +147,41 @@ export async function POST(req: Request) {
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const send = (obj: unknown) =>
-        controller.enqueue(encoder.encode(JSON.stringify(obj) + "\n"))
+        controller.enqueue(encoder.encode(JSON.stringify(obj) + '\n'))
 
-      send({ type: "start", count: body.assets.length })
+      send({ type: 'start', count: body.assets.length })
 
+      let analyzed = 0
       for (const asset of body.assets as StackAsset[]) {
-        // Simulate analysis latency so the streaming UX is visible.
-        await delay(450)
-        const seed = findSeedFinding(asset)
-        const finding: RiskFinding = seed
-          ? { ...seed, assetId: asset.id, asset, ticketStatus: "none", alertStatus: "none" }
-          : defaultCleanFinding(asset)
-        send({ type: "finding", finding })
+        try {
+          // Analyze using the AI agent
+          const finding = await analyzeAsset(asset)
+          analyzed++
+          send({ type: 'finding', finding, analyzed, total: body.assets.length })
+
+          // Small delay to avoid rate limiting
+          await delay(100)
+        } catch (err) {
+          console.error(`[v0] Error analyzing ${asset.name}:`, err)
+          send({
+            type: 'error',
+            assetId: asset.id,
+            assetName: asset.name,
+            error: (err as Error).message,
+          })
+        }
       }
 
-      send({ type: "done" })
+      send({ type: 'done', analyzed })
       controller.close()
     },
   })
 
   return new Response(stream, {
     headers: {
-      "Content-Type": "application/x-ndjson; charset=utf-8",
-      "Cache-Control": "no-cache, no-transform",
-      "X-Accel-Buffering": "no",
+      'Content-Type': 'application/x-ndjson; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      'X-Accel-Buffering': 'no',
     },
   })
 }
