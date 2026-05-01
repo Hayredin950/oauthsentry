@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function SettingsDialog() {
   const [isOpen, setIsOpen] = useState(false)
@@ -36,18 +37,24 @@ export function SettingsDialog() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="gap-2"
-          onClick={handleLoad}
-          title="Optional: Configure your own API keys for testing"
-        >
-          <Settings className="h-4 w-4" />
-          <span className="hidden sm:inline">Settings</span>
-        </Button>
-      </DialogTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DialogTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2"
+              onClick={handleLoad}
+            >
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Settings</span>
+            </Button>
+          </DialogTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          Optional: Configure your own API keys for testing
+        </TooltipContent>
+      </Tooltip>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Integration Configuration</DialogTitle>
@@ -145,6 +152,7 @@ export function SettingsDialog() {
           </div>
         )}
       </DialogContent>
+      </Tooltip>
     </Dialog>
   )
 }
