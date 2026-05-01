@@ -10,8 +10,6 @@ interface LinearIssueInput {
   title: string
   description: string
   priority: number // 1-4: urgent, high, medium, low
-  assigneeId?: string
-  labels?: string[]
 }
 
 /**
@@ -82,8 +80,6 @@ export async function createLinearIssue(issue: LinearIssueInput): Promise<{ issu
       title: issue.title,
       description: issue.description,
       priority: issue.priority,
-      assigneeId: issue.assigneeId,
-      labelIds: issue.labels || [],
     },
   }
 
@@ -128,7 +124,6 @@ export async function fileTicketForFinding(
         `\n\n**Recommendation**\n` +
         `${riskFinding.recommendation}`,
       priority,
-      labels: [riskFinding.level, riskFinding.asset.kind],
     })
 
     console.log('[OAuthSentry] Linear ticket created:', issue.issueId, issue.url)
