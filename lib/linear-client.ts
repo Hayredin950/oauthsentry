@@ -37,7 +37,7 @@ async function fetchTeamId(apiKey: string, providedTeamId?: string): Promise<str
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: apiKey,
     },
     body: JSON.stringify({ query }),
   })
@@ -91,7 +91,7 @@ export async function createLinearIssue(issue: LinearIssueInput): Promise<{ issu
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: apiKey,
     },
     body: JSON.stringify({ query: mutation, variables }),
   })
