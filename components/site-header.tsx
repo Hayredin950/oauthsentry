@@ -16,10 +16,10 @@ export function SiteHeader() {
         </div>
 
         <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
-          <a href="#scan" className="transition hover:text-foreground">
+          <a href="/" className="transition hover:text-foreground">
             Scanner
           </a>
-          <a href="#feed" className="transition hover:text-foreground">
+          <a href="/" className="transition hover:text-foreground">
             Threat feed
           </a>
           <a
