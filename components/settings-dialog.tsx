@@ -152,7 +152,6 @@ export function SettingsDialog() {
           </div>
         )}
       </DialogContent>
-      </Tooltip>
     </Dialog>
   )
 }
