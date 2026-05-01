@@ -56,28 +56,145 @@ bot.onNewMention(async (thread, message) => {
 
 /**
  * Auto-alert: when critical findings are detected (called from WDK workflow).
- * Posts a message to a designated Slack channel via webhook.
+ * Posts a rich formatted message to Slack with direct links and remediation steps.
  */
 export async function postCriticalAlert(
   channel: string,
-  findings: Array<{ asset: { name: string }; headline: string; level: string; score: number }>,
+  findings: Array<{
+    asset: { name: string; identifier: string; kind: string }
+    assetId: string
+    headline: string
+    level: string
+    score: number
+    reasoning: string
+    recommendation?: string
+    cveReferences?: Array<{ id: string; score: number }>
+  }>,
 ) {
   try {
-    // Use Slack webhook URL for direct posting (fallback if bot thread API unavailable)
     const webhookUrl = process.env.SLACK_WEBHOOK_URL
     if (!webhookUrl) {
       console.warn('[OAuthSentry] SLACK_WEBHOOK_URL not set, skipping alert')
       return
     }
 
-    const message =
-      `🚨 OAuthSentry Alert: ${findings.length} critical finding(s)\n\n` +
-      findings.map((f) => `• ${f.asset.name}: ${f.headline} (${f.level}, score ${f.score})`).join('\n')
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://oauthsentry.vercel.app'
+    const criticalFindings = findings.filter((f) => f.level === 'critical' || f.level === 'high')
+
+    if (criticalFindings.length === 0) return
+
+    // Build block kit message with all findings
+    const blocks: any[] = [
+      {
+        type: 'header',
+        text: {
+          type: 'plain_text',
+          text: `🚨 OAuthSentry: ${criticalFindings.length} Critical Finding${criticalFindings.length > 1 ? 's' : ''}`,
+          emoji: true,
+        },
+      },
+    ]
+
+    // Add each critical finding as a section
+    criticalFindings.slice(0, 5).forEach((finding, idx) => {
+      const severity =
+        finding.level === 'critical'
+          ? { emoji: '🔴', text: 'CRITICAL' }
+          : { emoji: '🟠', text: 'HIGH' }
+
+      blocks.push({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `${severity.emoji} *${finding.asset.name}* — ${severity.text}\n${finding.headline}\n_Score: ${finding.score}/100_`,
+        },
+      })
+
+      // Add remediation for the first 3 findings
+      if (idx < 3 && finding.recommendation) {
+        const steps = finding.recommendation
+          .split('\n')
+          .filter((line) => line.trim())
+          .slice(0, 2)
+          .map((step) => `• ${step.trim()}`)
+          .join('\n')
+
+        blocks.push({
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `*Quick Actions:*\n${steps}`,
+          },
+        })
+      }
+
+      // Add CVE references if available
+      if (finding.cveReferences && finding.cveReferences.length > 0) {
+        const cveText = finding.cveReferences
+          .slice(0, 3)
+          .map((ref) => `${ref.id} (CVSS ${ref.score})`)
+          .join(' • ')
+
+        blocks.push({
+          type: 'context',
+          elements: [
+            {
+              type: 'mrkdwn',
+              text: `🔗 Threats: ${cveText}`,
+            },
+          ],
+        })
+      }
+
+      // Add divider between findings (except last)
+      if (idx < criticalFindings.length - 1) {
+        blocks.push({
+          type: 'divider',
+        })
+      }
+    })
+
+    // Add action buttons
+    blocks.push({
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: 'View All Findings',
+            emoji: true,
+          },
+          url: `${appUrl}/#scan`,
+          style: 'primary',
+        },
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: 'Open Dashboard',
+            emoji: true,
+          },
+          url: appUrl,
+        },
+      ],
+    })
+
+    // Add summary footer
+    blocks.push({
+      type: 'context',
+      elements: [
+        {
+          type: 'mrkdwn',
+          text: `📊 Total: ${findings.length} findings | Critical: ${findings.filter((f) => f.level === 'critical').length} | _${new Date().toLocaleString()}_`,
+        },
+      ],
+    })
 
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: message }),
+      body: JSON.stringify({ blocks }),
     })
 
     if (!response.ok) {
