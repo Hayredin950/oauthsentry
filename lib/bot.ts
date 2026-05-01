@@ -14,8 +14,8 @@ export const bot = new Chat({
   userName: 'oauthsentry-bot',
   adapters: {
     slack: createSlackAdapter({
-      botToken: process.env.SLACK_BOT_TOKEN!,
-      signingSecret: process.env.SLACK_SIGNING_SECRET!,
+      botToken: process.env.SLACK_BOT_TOKEN || 'xoxb-placeholder',
+      signingSecret: process.env.SLACK_SIGNING_SECRET || 'placeholder-secret',
     }),
   },
   state: createMemoryState(),
