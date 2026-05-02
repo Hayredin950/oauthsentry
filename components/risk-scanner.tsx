@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { seedInventoryText, testInventories } from "@/lib/seed-data"
 import { demoFindings } from "@/lib/demo-findings"
+import { generateDemoFindings } from "@/lib/generate-demo-findings"
 import { parseInventory } from "@/lib/parse-inventory"
 import type { RiskFinding, StackAsset } from "@/lib/types"
 import { RiskResultsTable } from "@/components/risk-results-table"
@@ -140,14 +141,22 @@ export function RiskScanner() {
   }, [inventory])
 
   const runDemo = useCallback(async () => {
+    // Parse the current inventory
+    const assets = parseInventory(inventory)
+    
+    if (assets.length === 0) {
+      setErrorMsg("No valid assets in inventory. Add some items to scan.")
+      return
+    }
+    
     setState("scanning")
     setFindings([])
     setErrorMsg(null)
     setIsDemo(true)
     setLastScanTime(null)
     
-    // Simulate streaming demo findings with staggered delay
-    const demoResults = demoFindings
+    // Generate findings based on actual inventory (not hardcoded)
+    const demoResults = generateDemoFindings(assets)
     let accumulated: RiskFinding[] = []
     
     for (let i = 0; i < demoResults.length; i++) {
@@ -161,7 +170,7 @@ export function RiskScanner() {
     setState("done")
     setActiveAssetName(null)
     setLastScanTime(new Date())
-  }, [])
+  }, [inventory])
 
   const cancel = useCallback(() => {
     abortRef.current?.abort()
