@@ -6,12 +6,12 @@ export default function Page() {
   return (
     <div className="min-h-svh bg-background text-foreground">
       <SiteHeader />
-      <main>
+      <main className="px-3 sm:px-5 lg:px-8">
         <Hero />
         <RiskScanner />
       </main>
       <footer className="border-t border-border">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-8 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-6 py-8 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
           <p>
             OAuthSentry &mdash; built for{" "}
             <a

@@ -5,7 +5,7 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden border-b border-border">
       <div className="bg-grid absolute inset-0" aria-hidden />
-      <div className="relative mx-auto flex w-full max-w-7xl flex-col items-start gap-5 sm:gap-6 md:gap-7 lg:gap-8 px-4 py-10 sm:py-14 md:py-24 lg:py-28 sm:px-6">
+      <div className="relative mx-auto flex w-full max-w-7xl flex-col items-start gap-5 sm:gap-6 md:gap-7 lg:gap-8 px-5 py-10 sm:px-8 sm:py-14 md:py-24 lg:px-10 lg:py-28">
         <a
           href="https://vercel.com/kb"
           target="_blank"

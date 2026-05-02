@@ -252,7 +252,7 @@ export function RiskScanner() {
   return (
     <section
       id="scan"
-      className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6"
+      className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-12 lg:px-10"
       aria-label="Stack scanner"
     >
       <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
