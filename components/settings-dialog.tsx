@@ -55,12 +55,12 @@ export function SettingsDialog() {
           Optional: Configure your own API keys for testing
         </TooltipContent>
       </Tooltip>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Integration Configuration</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 overflow-y-auto">
           {/* Alert */}
           <Card className="bg-amber-500/10 border-amber-500/20 p-3 flex gap-2">
             <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
