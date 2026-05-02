@@ -276,3 +276,30 @@ export const seedFindings: RiskFinding[] = [
 export const seedInventoryText = seedAssets
   .map((a) => `${a.kind === "oauth_app" ? "oauth" : a.kind === "npm_package" ? "npm" : "saas"}: ${a.name} (${a.identifier})`)
   .join("\n")
+
+// Alternative inventory for testing different scenarios
+export const testInventories = {
+  minimal: `oauth: Google Calendar (google-calendar.app)
+saas: Notion (notion.so)`,
+  
+  npmFocused: `npm: lodash (lodash@4.17.21)
+npm: axios (axios@1.6.0)
+npm: express (express@4.18.2)
+npm: react (react@18.2.0)
+npm: typescript (typescript@5.3.0)`,
+  
+  oauthFocused: `oauth: Zoom (zoom.us)
+oauth: Salesforce (salesforce.com)
+oauth: GitHub (github.com/oauth)
+oauth: Google Drive (drive.google.com)
+oauth: Dropbox (dropbox.com)`,
+  
+  enterprise: `oauth: Context.ai (110671459871-30f1spbu0hptbs60cb4vsmv79i7bbvqj.apps.googleusercontent.com)
+oauth: Okta SSO (okta.com/sso)
+oauth: Microsoft 365 (microsoft365.com)
+saas: Jira (jira.atlassian.com)
+saas: Confluence (confluence.atlassian.com)
+saas: Datadog (datadoghq.com)
+npm: aws-sdk (@aws-sdk/client-s3@3.400.0)
+npm: prisma (@prisma/client@5.0.0)`,
+}

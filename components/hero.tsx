@@ -1,7 +1,24 @@
+"use client"
+
 import { ArrowDown, ShieldAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useScanStats } from "@/lib/scan-context"
 
 export function Hero() {
+  const { stats } = useScanStats()
+  
+  const formatLastSweep = (date: Date | null) => {
+    if (!date) return "not yet"
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    if (diffMins < 1) return "just now"
+    if (diffMins < 60) return `${diffMins}m ago`
+    const diffHours = Math.floor(diffMins / 60)
+    if (diffHours < 24) return `${diffHours}h ago`
+    return `${Math.floor(diffHours / 24)}d ago`
+  }
+  
   return (
     <section className="relative overflow-hidden border-b border-border">
       <div className="bg-grid absolute inset-0" aria-hidden />
@@ -44,10 +61,10 @@ export function Hero() {
         </div>
 
         <dl className="grid w-full grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-4">
-          <Stat label="IOC sources" value="14" />
-          <Stat label="Assets monitored" value="8" />
-          <Stat label="Critical findings" value="2" tone="critical" />
-          <Stat label="Last sweep" value="just now" mono={false} />
+          <Stat label="IOC sources" value={String(stats.iocSources)} />
+          <Stat label="Assets monitored" value={String(stats.assetsMonitored)} />
+          <Stat label="Critical findings" value={String(stats.criticalFindings)} tone={stats.criticalFindings > 0 ? "critical" : undefined} />
+          <Stat label="Last sweep" value={formatLastSweep(stats.lastSweep)} mono={false} />
         </dl>
       </div>
     </section>
