@@ -50,6 +50,19 @@ export type RiskTimeline = {
   event: string // e.g., "First detected", "Escalated to critical", "Breach disclosed"
 }
 
+// Alias for consistency
+export type RiskTimelineEvent = {
+  date: string
+  event: string
+  riskLevel: string
+  score: number
+}
+
+export type RiskFactorBreakdownItem = {
+  factor: string
+  points: number
+}
+
 export type IOC = {
   id: string
   publishedAt: string // ISO
