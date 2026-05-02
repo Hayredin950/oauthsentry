@@ -18,7 +18,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center gap-2">
+        <a href="/" className="flex items-center gap-2 hover:opacity-80 transition">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 ring-1 ring-inset ring-primary/30">
             <Radar className="h-4 w-4 text-primary" aria-hidden />
           </div>
@@ -26,7 +26,7 @@ export function SiteHeader() {
           <span className="ml-2 hidden rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground sm:inline">
             beta
           </span>
-        </div>
+        </a>
 
         {/* Desktop Navigation */}
         <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
