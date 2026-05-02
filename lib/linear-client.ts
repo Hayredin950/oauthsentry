@@ -56,13 +56,13 @@ async function fetchTeamId(apiKey: string, providedTeamId?: string): Promise<str
   return teamId
 }
 
-export async function createLinearIssue(issue: LinearIssueInput): Promise<{ issueId: string; url: string }> {
-  const apiKey = process.env.LINEAR_API_KEY
-  if (!apiKey) {
+export async function createLinearIssue(issue: LinearIssueInput, apiKey?: string): Promise<{ issueId: string; url: string }> {
+  const key = apiKey || process.env.LINEAR_API_KEY
+  if (!key) {
     throw new Error('LINEAR_API_KEY not set')
   }
 
-  const teamId = await fetchTeamId(apiKey, issue.teamId || process.env.LINEAR_TEAM_ID)
+  const teamId = await fetchTeamId(key, issue.teamId || process.env.LINEAR_TEAM_ID)
 
   const mutation = `
     mutation CreateIssue($input: IssueCreateInput!) {
@@ -92,7 +92,7 @@ export async function createLinearIssue(issue: LinearIssueInput): Promise<{ issu
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: apiKey,
+      Authorization: key,
     },
     body: JSON.stringify({ query: mutation, variables }),
   })
@@ -115,6 +115,7 @@ export async function createLinearIssue(issue: LinearIssueInput): Promise<{ issu
 
 export async function fileTicketForFinding(
   riskFinding: any,
+  apiKey?: string,
 ): Promise<{ success: boolean; issueId?: string; url?: string; error?: string }> {
   try {
     const priority = riskFinding.level === 'critical' ? 1 : riskFinding.level === 'high' ? 2 : 3
@@ -132,7 +133,7 @@ export async function fileTicketForFinding(
         `\n\n**Recommendation**\n` +
         `${riskFinding.recommendation}`,
       priority,
-    })
+    }, apiKey)
 
     console.log('[OAuthSentry] Linear ticket created:', issue.issueId, issue.url)
     return { success: true, issueId: issue.issueId, url: issue.url }

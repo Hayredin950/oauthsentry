@@ -18,12 +18,23 @@ const RequestSchema = z.object({
     recommendation: z.string(),
     factors: z.array(z.object({ label: z.string(), detail: z.string() })),
   }),
+  linearApiKey: z.string().optional(),
 })
 
 export async function POST(req: Request) {
   try {
     const body = RequestSchema.parse(await req.json())
-    const result = await fileTicketForFinding(body.finding as any)
+    
+    // Use API key from request body (localStorage) or fall back to env var
+    const apiKey = body.linearApiKey || process.env.LINEAR_API_KEY
+    if (!apiKey) {
+      return Response.json(
+        { success: false, error: 'Linear API Key not configured. Please add it in Settings.' },
+        { status: 400 },
+      )
+    }
+    
+    const result = await fileTicketForFinding(body.finding as any, apiKey)
 
     return Response.json(result)
   } catch (err) {

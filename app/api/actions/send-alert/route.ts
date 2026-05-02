@@ -11,18 +11,21 @@ const RequestSchema = z.object({
     recommendation: z.string().optional(),
     cveReferences: z.array(z.object({ id: z.string(), score: z.number() })).optional(),
   }),
+  slackWebhookUrl: z.string().optional(),
 })
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.SLACK_WEBHOOK_URL) {
+    const body = RequestSchema.parse(await req.json())
+    
+    // Use webhook URL from request body (localStorage) or fall back to env var
+    const webhookUrl = body.slackWebhookUrl || process.env.SLACK_WEBHOOK_URL
+    if (!webhookUrl) {
       return Response.json(
-        { success: false, error: 'SLACK_WEBHOOK_URL not configured' },
-        { status: 500 },
+        { success: false, error: 'Slack Webhook URL not configured. Please add it in Settings.' },
+        { status: 400 },
       )
     }
-
-    const body = RequestSchema.parse(await req.json())
     const finding = body.finding
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://oauthsentry.vercel.app'
@@ -151,7 +154,7 @@ export async function POST(req: Request) {
       ],
     }
 
-    const res = await fetch(process.env.SLACK_WEBHOOK_URL, {
+    const res = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(message),

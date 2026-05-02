@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { seedInventoryText, testInventories } from "@/lib/seed-data"
 import { demoFindings } from "@/lib/demo-findings"
+import { generateDemoFindings } from "@/lib/generate-demo-findings"
 import { parseInventory } from "@/lib/parse-inventory"
 import type { RiskFinding, StackAsset } from "@/lib/types"
 import { RiskResultsTable } from "@/components/risk-results-table"
@@ -140,14 +141,22 @@ export function RiskScanner() {
   }, [inventory])
 
   const runDemo = useCallback(async () => {
+    // Parse the current inventory
+    const assets = parseInventory(inventory)
+    
+    if (assets.length === 0) {
+      setErrorMsg("No valid assets in inventory. Add some items to scan.")
+      return
+    }
+    
     setState("scanning")
     setFindings([])
     setErrorMsg(null)
     setIsDemo(true)
     setLastScanTime(null)
     
-    // Simulate streaming demo findings with staggered delay
-    const demoResults = demoFindings
+    // Generate findings based on actual inventory (not hardcoded)
+    const demoResults = generateDemoFindings(assets)
     let accumulated: RiskFinding[] = []
     
     for (let i = 0; i < demoResults.length; i++) {
@@ -161,7 +170,7 @@ export function RiskScanner() {
     setState("done")
     setActiveAssetName(null)
     setLastScanTime(new Date())
-  }, [])
+  }, [inventory])
 
   const cancel = useCallback(() => {
     abortRef.current?.abort()
@@ -198,17 +207,25 @@ export function RiskScanner() {
       const finding = findings.find((f) => f.assetId === assetId)
       if (!finding) return
 
+      // Get API key from localStorage (set via Settings dialog)
+      const linearApiKey = localStorage.getItem("LINEAR_API_KEY")
+      if (!linearApiKey) {
+        alert("Please configure your Linear API Key in Settings first.")
+        return
+      }
+
       updateStatus(assetId, "ticketStatus", "filing", "filed")
 
       try {
         const res = await fetch('/api/actions/file-ticket', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ finding }),
+          body: JSON.stringify({ finding, linearApiKey }),
         })
         const data = await res.json()
         if (!data.success) {
           console.error('[v0] file ticket error:', data.error)
+          alert(`Failed to file ticket: ${data.error}`)
         }
       } catch (err) {
         console.error('[v0] file ticket fetch error:', err)
@@ -222,17 +239,25 @@ export function RiskScanner() {
       const finding = findings.find((f) => f.assetId === assetId)
       if (!finding) return
 
+      // Get webhook URL from localStorage (set via Settings dialog)
+      const slackWebhookUrl = localStorage.getItem("SLACK_WEBHOOK_URL")
+      if (!slackWebhookUrl) {
+        alert("Please configure your Slack Webhook URL in Settings first.")
+        return
+      }
+
       updateStatus(assetId, "alertStatus", "sending", "sent")
 
       try {
         const res = await fetch('/api/actions/send-alert', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ finding }),
+          body: JSON.stringify({ finding, slackWebhookUrl }),
         })
         const data = await res.json()
         if (!data.success) {
           console.error('[v0] send alert error:', data.error)
+          alert(`Failed to send Slack alert: ${data.error}`)
         }
       } catch (err) {
         console.error('[v0] send alert fetch error:', err)
