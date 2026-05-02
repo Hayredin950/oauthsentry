@@ -60,8 +60,7 @@ async function fetchNVDVulnerabilities(): Promise<ThreatFeedItem[]> {
         publishedAt: new Date(cve.published),
       }
     })
-  } catch (err) {
-    console.error('[v0] NVD fetch error:', err)
+  } catch {
     return []
   }
 }
@@ -101,8 +100,7 @@ async function fetchOSVVulnerabilities(): Promise<ThreatFeedItem[]> {
         publishedAt: new Date(vuln.published || Date.now()),
       }
     })
-  } catch (err) {
-    console.error('[v0] OSV fetch error:', err)
+  } catch {
     return []
   }
 }
@@ -142,8 +140,7 @@ async function fetchGitHubAdvisories(): Promise<ThreatFeedItem[]> {
         publishedAt: new Date(advisory.published_at || Date.now()),
       }
     })
-  } catch (err) {
-    console.error('[v0] GitHub advisories fetch error:', err)
+  } catch {
     return []
   }
 }
@@ -176,8 +173,7 @@ export async function GET() {
       sources: ['NVD', 'OSV', 'GitHub Security'],
       fetchedAt: new Date().toISOString(),
     })
-  } catch (err) {
-    console.error('[v0] Threat feed error:', err)
+  } catch {
     return NextResponse.json(
       { error: 'Failed to fetch threat feed', items: [] },
       { status: 500 }
