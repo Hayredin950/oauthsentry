@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
 import type { RiskFinding, StackAsset } from "@/lib/types"
-import { seedIOCs } from "@/lib/seed-data"
+import { seedIOCs, seedInventoryText } from "@/lib/seed-data"
+import { parseInventory } from "@/lib/parse-inventory"
 
 interface ScanStats {
   iocSources: number
@@ -22,9 +23,12 @@ interface ScanContextType {
   setScanning: (isScanning: boolean) => void
 }
 
+// Initialize with actual inventory count
+const initialAssets = parseInventory(seedInventoryText)
+
 const defaultStats: ScanStats = {
   iocSources: seedIOCs.length,
-  assetsMonitored: 0,
+  assetsMonitored: initialAssets.length,
   criticalFindings: 0,
   highFindings: 0,
   mediumFindings: 0,
