@@ -77,16 +77,15 @@ export function IocFeed() {
           <h2 className="text-sm font-semibold tracking-tight">Threat feed</h2>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
+          <button
             onClick={() => mutate()}
             disabled={isLoading}
             title="Refresh feed"
+            className="p-1 rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            aria-label="Refresh threat feed"
           >
-            <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
-          </Button>
+            <RefreshCw className={`h-4 w-4 text-muted-foreground hover:text-foreground ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
           <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-shrink-0">
             <span className={`h-1.5 w-1.5 rounded-full ${isLive ? 'radar-pulse bg-primary' : 'bg-muted-foreground'}`} aria-hidden />
             {isLive ? 'Live' : 'Demo'}
