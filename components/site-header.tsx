@@ -17,7 +17,7 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
-      <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10">
         <a href="/" className="flex items-center gap-2 hover:opacity-80 transition">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 ring-1 ring-inset ring-primary/30">
             <Radar className="h-4 w-4 text-primary" aria-hidden />
@@ -68,7 +68,7 @@ export function SiteHeader() {
       {/* Mobile Navigation Dropdown */}
       {mobileMenuOpen && (
         <nav className="md:hidden border-t border-border bg-background/95 backdrop-blur">
-          <div className="mx-auto max-w-7xl px-4 py-3 space-y-1">
+          <div className="mx-auto max-w-7xl px-5 py-3 space-y-1 sm:px-8 lg:px-10">
             {navLinks.map((link) => (
               <a
                 key={link.href}

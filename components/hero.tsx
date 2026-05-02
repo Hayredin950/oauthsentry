@@ -1,11 +1,28 @@
+"use client"
+
 import { ArrowDown, ShieldAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useScanStats } from "@/lib/scan-context"
 
 export function Hero() {
+  const { stats } = useScanStats()
+  
+  const formatLastSweep = (date: Date | null) => {
+    if (!date) return "not yet"
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    if (diffMins < 1) return "just now"
+    if (diffMins < 60) return `${diffMins}m ago`
+    const diffHours = Math.floor(diffMins / 60)
+    if (diffHours < 24) return `${diffHours}h ago`
+    return `${Math.floor(diffHours / 24)}d ago`
+  }
+  
   return (
     <section className="relative overflow-hidden border-b border-border">
       <div className="bg-grid absolute inset-0" aria-hidden />
-      <div className="relative mx-auto flex w-full max-w-7xl flex-col items-start gap-5 sm:gap-6 md:gap-7 lg:gap-8 px-4 py-10 sm:py-14 md:py-24 lg:py-28 sm:px-6">
+      <div className="relative mx-auto flex w-full max-w-7xl flex-col items-start gap-5 sm:gap-6 md:gap-7 lg:gap-8 px-5 py-10 sm:px-8 sm:py-14 md:py-24 lg:px-10 lg:py-28">
         <a
           href="https://vercel.com/kb"
           target="_blank"
@@ -44,10 +61,10 @@ export function Hero() {
         </div>
 
         <dl className="grid w-full grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-4">
-          <Stat label="IOC sources" value="14" />
-          <Stat label="Assets monitored" value="8" />
-          <Stat label="Critical findings" value="2" tone="critical" />
-          <Stat label="Last sweep" value="just now" mono={false} />
+          <Stat label="IOC sources" value={String(stats.iocSources)} />
+          <Stat label="Assets monitored" value={String(stats.assetsMonitored)} />
+          <Stat label="Critical findings" value={String(stats.criticalFindings)} tone={stats.criticalFindings > 0 ? "critical" : undefined} />
+          <Stat label="Last sweep" value={formatLastSweep(stats.lastSweep)} mono={false} />
         </dl>
       </div>
     </section>
@@ -66,15 +83,15 @@ function Stat({
   mono?: boolean
 }) {
   return (
-    <div className="bg-card px-3 py-3 sm:px-4 sm:py-4">
-      <dt className="text-[9px] sm:text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+    <div className="bg-card px-3 py-3 sm:px-4 sm:py-4 flex flex-col justify-between min-h-[72px] sm:min-h-[80px]">
+      <dt className="text-[9px] sm:text-[11px] font-mono uppercase tracking-wider text-muted-foreground leading-tight">
         {label}
       </dt>
       <dd
         className={
           mono
-            ? `mt-0.5 sm:mt-1 text-lg sm:text-2xl font-semibold tracking-tight ${tone === "critical" ? "text-[var(--chart-1)]" : ""}`
-            : "mt-0.5 sm:mt-1 text-lg sm:text-2xl font-semibold tracking-tight"
+            ? `text-lg sm:text-2xl font-semibold tracking-tight ${tone === "critical" ? "text-[var(--chart-1)]" : ""}`
+            : "text-lg sm:text-2xl font-semibold tracking-tight"
         }
       >
         {value}

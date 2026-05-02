@@ -1,16 +1,17 @@
 "use client"
 
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useRef, useState, useEffect } from "react"
 import { ListChecks, Loader2, Play, RotateCcw, Sparkles, TriangleAlert, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { seedInventoryText } from "@/lib/seed-data"
+import { seedInventoryText, testInventories } from "@/lib/seed-data"
 import { demoFindings } from "@/lib/demo-findings"
 import { parseInventory } from "@/lib/parse-inventory"
 import type { RiskFinding, StackAsset } from "@/lib/types"
 import { RiskResultsTable } from "@/components/risk-results-table"
 import { IocFeed } from "@/components/ioc-feed"
 import { MetricsDashboard } from "@/components/metrics-dashboard"
+import { useScanStats } from "@/lib/scan-context"
 
 type ScanState = "idle" | "scanning" | "done" | "error"
 
@@ -24,6 +25,13 @@ export function RiskScanner() {
   const [lastScanTime, setLastScanTime] = useState<Date | null>(null)
   const [isDemo, setIsDemo] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
+  const { updateStats, setScanning } = useScanStats()
+  
+  // Update global stats when findings or scan state changes
+  useEffect(() => {
+    const assets = parseInventory(inventory)
+    updateStats(assets, findings, lastScanTime, state === "scanning")
+  }, [findings, lastScanTime, state, inventory, updateStats])
 
   const runScan = useCallback(async () => {
     const assets = parseInventory(inventory)
@@ -252,7 +260,7 @@ export function RiskScanner() {
   return (
     <section
       id="scan"
-      className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6"
+      className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-12 lg:px-10"
       aria-label="Stack scanner"
     >
       <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -299,9 +307,26 @@ export function RiskScanner() {
                 <ListChecks className="h-4 w-4 text-muted-foreground" aria-hidden />
                 <h3 className="text-sm font-semibold tracking-tight">Inventory</h3>
               </div>
-              <span className="font-mono text-[11px] text-muted-foreground">
-                {inventoryItemCount} items
-              </span>
+              <div className="flex items-center gap-3">
+                <select
+                  onChange={(e) => {
+                    const val = e.target.value
+                    if (val === "default") setInventory(seedInventoryText)
+                    else if (val in testInventories) setInventory(testInventories[val as keyof typeof testInventories])
+                  }}
+                  className="bg-muted border border-border rounded px-2 py-1 text-[11px] font-mono text-muted-foreground"
+                  aria-label="Select test inventory"
+                >
+                  <option value="default">Default (8)</option>
+                  <option value="minimal">Minimal (2)</option>
+                  <option value="npmFocused">NPM Focus (5)</option>
+                  <option value="oauthFocused">OAuth Focus (5)</option>
+                  <option value="enterprise">Enterprise (8)</option>
+                </select>
+                <span className="font-mono text-[11px] text-muted-foreground">
+                  {inventoryItemCount} items
+                </span>
+              </div>
             </div>
             <Textarea
               value={inventory}
