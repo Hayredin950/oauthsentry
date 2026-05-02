@@ -291,8 +291,8 @@ export function RiskScanner() {
         />
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
-        <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-[1fr_360px] overflow-hidden">
+        <div className="space-y-4 min-w-0">
           <div className="overflow-hidden rounded-lg border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
               <div className="flex items-center gap-2">
@@ -397,7 +397,7 @@ export function RiskScanner() {
           />
         </div>
 
-        <div className="lg:max-h-[calc(100vh-2rem)] lg:sticky lg:top-20">
+        <div className="lg:max-h-[calc(100vh-2rem)] lg:sticky lg:top-20 min-w-0 overflow-hidden">
           <IocFeed />
         </div>
       </div>
