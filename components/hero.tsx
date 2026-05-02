@@ -5,7 +5,7 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden border-b border-border">
       <div className="bg-grid absolute inset-0" aria-hidden />
-      <div className="relative mx-auto flex w-full max-w-7xl flex-col items-start gap-5 sm:gap-6 px-4 py-8 sm:py-12 md:py-16 sm:px-6">
+      <div className="relative mx-auto flex w-full max-w-7xl flex-col items-start gap-5 sm:gap-6 lg:gap-8 px-4 py-10 sm:py-14 md:py-20 lg:py-28 sm:px-6">
         <a
           href="https://vercel.com/kb"
           target="_blank"
@@ -18,7 +18,7 @@ export function Hero() {
           <span className="hidden sm:inline">Inspired by the Vercel / Context.ai incident</span>
         </a>
 
-        <h1 className="max-w-4xl text-balance text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold leading-[1.1] tracking-tight">
+        <h1 className="max-w-4xl text-balance text-2xl sm:text-3xl md:text-4xl lg:text-6xl xl:text-7xl font-semibold leading-[1.1] tracking-tight">
           Find the third-party AI tool{" "}
           <span className="text-primary">that breaches you</span>
           <br className="hidden md:block" /> before it does.
