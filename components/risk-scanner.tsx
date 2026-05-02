@@ -198,17 +198,25 @@ export function RiskScanner() {
       const finding = findings.find((f) => f.assetId === assetId)
       if (!finding) return
 
+      // Get API key from localStorage (set via Settings dialog)
+      const linearApiKey = localStorage.getItem("LINEAR_API_KEY")
+      if (!linearApiKey) {
+        alert("Please configure your Linear API Key in Settings first.")
+        return
+      }
+
       updateStatus(assetId, "ticketStatus", "filing", "filed")
 
       try {
         const res = await fetch('/api/actions/file-ticket', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ finding }),
+          body: JSON.stringify({ finding, linearApiKey }),
         })
         const data = await res.json()
         if (!data.success) {
           console.error('[v0] file ticket error:', data.error)
+          alert(`Failed to file ticket: ${data.error}`)
         }
       } catch (err) {
         console.error('[v0] file ticket fetch error:', err)
@@ -222,17 +230,25 @@ export function RiskScanner() {
       const finding = findings.find((f) => f.assetId === assetId)
       if (!finding) return
 
+      // Get webhook URL from localStorage (set via Settings dialog)
+      const slackWebhookUrl = localStorage.getItem("SLACK_WEBHOOK_URL")
+      if (!slackWebhookUrl) {
+        alert("Please configure your Slack Webhook URL in Settings first.")
+        return
+      }
+
       updateStatus(assetId, "alertStatus", "sending", "sent")
 
       try {
         const res = await fetch('/api/actions/send-alert', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ finding }),
+          body: JSON.stringify({ finding, slackWebhookUrl }),
         })
         const data = await res.json()
         if (!data.success) {
           console.error('[v0] send alert error:', data.error)
+          alert(`Failed to send Slack alert: ${data.error}`)
         }
       } catch (err) {
         console.error('[v0] send alert fetch error:', err)
