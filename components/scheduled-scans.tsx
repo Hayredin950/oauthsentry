@@ -25,24 +25,7 @@ export function ScheduledScans() {
     includeRecommendations: true,
   })
 
-  const [savedSchedules, setSavedSchedules] = useState<ScheduleConfig[]>([
-    {
-      frequency: "weekly",
-      time: "09:00",
-      dayOfWeek: 1,
-      recipients: ["security-team@company.com"],
-      includeCharts: true,
-      includeRecommendations: true,
-    },
-    {
-      frequency: "monthly",
-      time: "08:00",
-      dayOfMonth: 1,
-      recipients: ["ciso@company.com"],
-      includeCharts: true,
-      includeRecommendations: false,
-    },
-  ])
+  const [savedSchedules, setSavedSchedules] = useState<ScheduleConfig[]>([])
 
   const handleDelete = (index: number) => {
     setSavedSchedules(savedSchedules.filter((_, i) => i !== index))
