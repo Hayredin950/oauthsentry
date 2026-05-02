@@ -83,15 +83,15 @@ function Stat({
   mono?: boolean
 }) {
   return (
-    <div className="bg-card px-3 py-3 sm:px-4 sm:py-4">
-      <dt className="text-[9px] sm:text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+    <div className="bg-card px-3 py-3 sm:px-4 sm:py-4 flex flex-col justify-between min-h-[72px] sm:min-h-[80px]">
+      <dt className="text-[9px] sm:text-[11px] font-mono uppercase tracking-wider text-muted-foreground leading-tight">
         {label}
       </dt>
       <dd
         className={
           mono
-            ? `mt-0.5 sm:mt-1 text-lg sm:text-2xl font-semibold tracking-tight ${tone === "critical" ? "text-[var(--chart-1)]" : ""}`
-            : "mt-0.5 sm:mt-1 text-lg sm:text-2xl font-semibold tracking-tight"
+            ? `text-lg sm:text-2xl font-semibold tracking-tight ${tone === "critical" ? "text-[var(--chart-1)]" : ""}`
+            : "text-lg sm:text-2xl font-semibold tracking-tight"
         }
       >
         {value}
