@@ -103,6 +103,35 @@
   mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 80%);
 }
 
+/* Premium custom scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.28 0.005 90) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: oklch(0.28 0.005 90);
+  border-radius: 99px;
+  transition: background 0.2s;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.82 0.16 78 / 60%);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Radar pulse animation for the live indicator */
 @keyframes radar-pulse {
   0% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 60%, transparent); }
