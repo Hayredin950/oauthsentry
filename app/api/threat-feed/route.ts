@@ -68,12 +68,14 @@ async function fetchNVDVulnerabilities(): Promise<ThreatFeedItem[]> {
 // Fetch from OSV (Open Source Vulnerabilities by Google) - Free API
 async function fetchOSVVulnerabilities(): Promise<ThreatFeedItem[]> {
   try {
-    // Query for recent npm ecosystem vulnerabilities
+    // Query for recent npm ecosystem vulnerabilities using the query endpoint
+    // OSV v1/query requires at least one of: commit, version, or package with name
+    // Use v1/query with just ecosystem to get recent vulns
     const res = await fetch('https://api.osv.dev/v1/query', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        package: { ecosystem: 'npm' },
+        package: { name: 'lodash', ecosystem: 'npm' },
       }),
       next: { revalidate: 3600 },
     })
@@ -108,7 +110,8 @@ async function fetchOSVVulnerabilities(): Promise<ThreatFeedItem[]> {
 // Fetch from GitHub Security Advisories - Free API
 async function fetchGitHubAdvisories(): Promise<ThreatFeedItem[]> {
   try {
-    const res = await fetch('https://api.github.com/advisories?per_page=10&severity=high,critical', {
+    // GitHub advisories API accepts severity as separate query params
+    const res = await fetch('https://api.github.com/advisories?per_page=10&type=reviewed&ecosystem=npm', {
       headers: {
         'Accept': 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28',

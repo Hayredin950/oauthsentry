@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { ScanProvider } from '@/lib/scan-context'
 import { ThemeProvider } from '@/components/theme-provider'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { SiteHeader } from '@/components/site-header'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -56,6 +57,7 @@ export default function RootLayout({
         >
           <TooltipProvider>
             <ScanProvider>
+              <SiteHeader />
               {children}
             </ScanProvider>
           </TooltipProvider>

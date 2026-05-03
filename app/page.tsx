@@ -1,11 +1,9 @@
-import { SiteHeader } from "@/components/site-header"
 import { Hero } from "@/components/hero"
 import { RiskScanner } from "@/components/risk-scanner"
 
 export default function Page() {
   return (
     <div className="min-h-svh bg-background text-foreground">
-      <SiteHeader />
       <main className="px-3 sm:px-5 lg:px-8">
         <Hero />
         <RiskScanner />
