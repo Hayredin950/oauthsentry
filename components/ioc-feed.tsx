@@ -21,9 +21,23 @@ interface ThreatItem {
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
-function formatRelative(dateInput: string | Date) {
+// Custom hook to get current time safely (avoids prerender issues in Next.js 16)
+function useNow() {
+  const [now, setNow] = useState<number | null>(null)
+  
+  useEffect(() => {
+    setNow(Date.now())
+    // Update every minute for relative times
+    const interval = setInterval(() => setNow(Date.now()), 60000)
+    return () => clearInterval(interval)
+  }, [])
+  
+  return now
+}
+
+function formatRelative(dateInput: string | Date, now: number | null) {
+  if (now === null) return "..."
   const then = new Date(dateInput).getTime()
-  const now = Date.now()
   const diff = Math.max(0, now - then)
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
   if (days >= 1) return `${days}d ago`
@@ -45,6 +59,7 @@ const indicatorLabel: Record<string, string> = {
 }
 
 export function IocFeed() {
+  const now = useNow()
   const [useLive, setUseLive] = useState(true)
   const { data, error, isLoading, mutate } = useSWR<{ items: ThreatItem[], fetchedAt?: string }>(
     useLive ? '/api/threat-feed' : null,
@@ -112,7 +127,7 @@ export function IocFeed() {
             <div className="mb-1.5 flex items-center justify-between gap-2">
               <RiskScoreBadge level={ioc.severity} />
               <time className="font-mono text-[10px] sm:text-[11px] text-muted-foreground flex-shrink-0">
-                {formatRelative(ioc.publishedAt)}
+                {formatRelative(ioc.publishedAt, now)}
               </time>
             </div>
             <h3 className="text-xs sm:text-sm font-medium leading-snug line-clamp-2">{ioc.title}</h3>
@@ -147,7 +162,7 @@ export function IocFeed() {
 
       {data?.fetchedAt && (
         <div className="border-t border-border px-3 py-2 text-[10px] text-muted-foreground">
-          Last updated: {formatRelative(data.fetchedAt)} from NVD, OSV, GitHub
+          Last updated: {formatRelative(data.fetchedAt, now)} from NVD, OSV, GitHub
         </div>
       )}
     </aside>
