@@ -1,8 +1,175 @@
-import type { RiskFinding, StackAsset } from "@/lib/types"
+import type { RiskFinding, StackAsset, RiskTimeline, RiskLevel } from "@/lib/types"
+
+// Helper to generate realistic timeline events
+function generateTimeline(asset: StackAsset, score: number, level: RiskLevel): RiskTimeline[] {
+  const now = new Date()
+  const events: RiskTimeline[] = []
+
+  // Event 1: First detected (30-45 days ago)
+  const firstDetected = new Date(now)
+  firstDetected.setDate(now.getDate() - Math.floor(Math.random() * 15) - 30)
+  events.push({
+    date: firstDetected.toISOString(),
+    event: `First detected in public advisory for ${asset.name}`,
+    level: 'low' as RiskLevel,
+    score: Math.floor(score * 0.2),
+  })
+
+  // Event 2: Elevated risk (15-25 days ago)
+  const elevated = new Date(now)
+  elevated.setDate(now.getDate() - Math.floor(Math.random() * 10) - 15)
+  events.push({
+    date: elevated.toISOString(),
+    event: asset.kind === 'oauth_app'
+      ? 'Admin scopes identified in OAuth token'
+      : asset.kind === 'npm_package'
+        ? 'Vulnerability details published'
+        : 'Integration permissions expanded',
+    level: 'medium' as RiskLevel,
+    score: Math.floor(score * 0.5),
+  })
+
+  // Event 3: Current risk (recent)
+  const current = new Date(now)
+  current.setDate(now.getDate() - Math.floor(Math.random() * 5))
+  events.push({
+    date: current.toISOString(),
+    event: score >= 80
+      ? 'Active exploitation detected in the wild'
+      : score >= 60
+        ? 'Proof of concept exploit published'
+        : 'Routine security assessment completed',
+    level: level,
+    score: score,
+  })
+
+  return events
+}
+
+// Helper to generate risk factor breakdown
+function generateRiskFactorBreakdown(score: number, assetKind: string): Array<{ factor: string; points: number }> {
+  if (assetKind === 'oauth_app') {
+    const compromiseHistory = Math.floor(score * 0.35)
+    const accessVector = Math.floor(score * 0.25)
+    const affectedConsumers = Math.floor(score * 0.22)
+    const vendorTrustChange = score - compromiseHistory - accessVector - affectedConsumers
+
+    return [
+      { factor: 'Compromise History', points: compromiseHistory },
+      { factor: 'Access Vector', points: accessVector },
+      { factor: 'Affected Consumers', points: affectedConsumers },
+      { factor: 'Vendor Trust Change', points: vendorTrustChange },
+    ]
+  } else if (assetKind === 'npm_package') {
+    const cveScore = Math.floor(score * 0.4)
+    const exploitability = Math.floor(score * 0.25)
+    const popularity = Math.floor(score * 0.2)
+    const maintainerActivity = score - cveScore - exploitability - popularity
+
+    return [
+      { factor: 'CVE Severity', points: cveScore },
+      { factor: 'Exploitability', points: exploitability },
+      { factor: 'Package Popularity', points: popularity },
+      { factor: 'Maintainer Activity', points: maintainerActivity },
+    ]
+  } else {
+    const dataExposure = Math.floor(score * 0.3)
+    const integrationDepth = Math.floor(score * 0.25)
+    const vendorSecurity = Math.floor(score * 0.25)
+    const complianceRisk = score - dataExposure - integrationDepth - vendorSecurity
+
+    return [
+      { factor: 'Data Exposure', points: dataExposure },
+      { factor: 'Integration Depth', points: integrationDepth },
+      { factor: 'Vendor Security', points: vendorSecurity },
+      { factor: 'Compliance Risk', points: complianceRisk },
+    ]
+  }
+}
+
+// Helper to generate remediation recommendations
+function generateRemediationSteps(asset: StackAsset, level: string): string[] {
+  if (asset.kind === 'oauth_app') {
+    if (level === 'critical') {
+      return [
+        `Immediately revoke all ${asset.name} OAuth permissions`,
+        'Audit and rotate all connected service account keys',
+        'Review workspace audit logs for suspicious activity',
+        'Notify all affected users to change passwords',
+        'Enable 2FA enforcement for all users',
+        'Contact your security team for incident response',
+      ]
+    } else if (level === 'high') {
+      return [
+        `Review and minimize OAuth scopes for ${asset.name}`,
+        'Enable OAuth token monitoring',
+        'Set up alerts for unusual API activity',
+        'Schedule quarterly access reviews',
+      ]
+    }
+    return [
+      `Review ${asset.name} permissions annually`,
+      'Verify business need for continued access',
+      'Document integration purpose',
+    ]
+  } else if (asset.kind === 'npm_package') {
+    if (level === 'critical' || level === 'high') {
+      return [
+        `Update ${asset.name} to the latest patched version immediately`,
+        'Run npm audit to check for related vulnerabilities',
+        'Review your lockfile for dependency integrity',
+        'Check for indirect dependencies that may be affected',
+        'Enable automated security updates via Dependabot',
+      ]
+    }
+    return [
+      `Monitor ${asset.name} for security advisories`,
+      'Keep dependencies updated regularly',
+      'Run npm audit as part of CI/CD pipeline',
+    ]
+  } else {
+    if (level === 'critical' || level === 'high') {
+      return [
+        `Review all data shared with ${asset.name}`,
+        'Verify data processing agreements are in place',
+        'Audit API access logs for unusual patterns',
+        'Limit integration to necessary data only',
+        'Enable SSO/SAML if available',
+      ]
+    }
+    return [
+      `Document business purpose for ${asset.name}`,
+      'Review access permissions quarterly',
+      'Verify compliance with data policies',
+    ]
+  }
+}
 
 // Risk patterns for different asset types
 const riskPatterns = {
   oauth_app: [
+    {
+      condition: (asset: StackAsset) =>
+        asset.identifier.includes('110671459871') ||
+        asset.name.toLowerCase().includes('context'),
+      generate: (asset: StackAsset): Partial<RiskFinding> => ({
+        level: 'critical',
+        score: 95,
+        headline: `Compromised OAuth app detected: ${asset.name}`,
+        reasoning: `The OAuth application "${asset.name}" was identified in the April 2026 Vercel/Context.ai breach. This app had excessive permissions including calendar, drive, and email scopes, and was used to pivot into employee systems.`,
+        recommendation: `Immediately revoke all permissions. Audit all data accessed by this app. Reset credentials for affected users.`,
+        factors: [
+          { label: 'Known breach', detail: 'Part of Vercel/Context.ai incident' },
+          { label: 'Excessive scopes', detail: 'Calendar, Drive, Email access' },
+          { label: 'Data exfiltration', detail: 'May have accessed sensitive data' },
+        ],
+        iocMatches: ['ioc-2026-04-19-context'],
+        cveReferences: [
+          { id: 'CVE-2026-0047', score: 9.8, source: 'NVD' },
+          { id: 'CVE-2026-0048', score: 10.0, source: 'GitHub Advisory' },
+        ],
+      }),
+    },
     {
       condition: (asset: StackAsset) => asset.identifier.includes('google') || asset.name.toLowerCase().includes('google'),
       generate: (asset: StackAsset): Partial<RiskFinding> => ({
@@ -14,6 +181,11 @@ const riskPatterns = {
         factors: [
           { label: 'Scope breadth', detail: 'Multiple sensitive scopes granted' },
           { label: 'Data access', detail: 'Can read/write user data' },
+          { label: 'AI Processing', detail: 'Data sent to external AI APIs' },
+          { label: 'Compliance risk', detail: 'May violate data residency requirements' },
+        ],
+        cveReferences: [
+          { id: 'CVE-2026-1234', score: 8.5, source: 'CISA' },
         ],
       }),
     },
@@ -48,6 +220,26 @@ const riskPatterns = {
   ],
   npm_package: [
     {
+      condition: (asset: StackAsset) =>
+        asset.name.toLowerCase().includes('clipboardz') ||
+        asset.name.toLowerCase().includes('clipboard'),
+      generate: (asset: StackAsset): Partial<RiskFinding> => ({
+        level: 'critical',
+        score: 85,
+        headline: `Typosquat package detected: ${asset.name}`,
+        reasoning: `This package appears to be a typosquat of a legitimate clipboard library. Malicious npm packages often use similar names to trick developers into installing malware.`,
+        recommendation: `Remove this package immediately. Scan for any data exfiltration. Verify you meant to install the legitimate package.`,
+        factors: [
+          { label: 'Typosquat', detail: 'Mimics legitimate package name' },
+          { label: 'Malware risk', detail: 'May contain malicious code' },
+        ],
+        iocMatches: ['ioc-npm-typosquat'],
+        cveReferences: [
+          { id: 'GHSA-2026-clip', score: 9.1, source: 'GitHub Advisory' },
+        ],
+      }),
+    },
+    {
       condition: (asset: StackAsset) => asset.name.toLowerCase().includes('lodash'),
       generate: (asset: StackAsset): Partial<RiskFinding> => ({
         level: 'low',
@@ -58,7 +250,7 @@ const riskPatterns = {
         factors: [
           { label: 'Historical CVEs', detail: 'CVE-2019-10744, CVE-2020-8203' },
         ],
-        cveReferences: [{ id: 'CVE-2020-8203', score: 7.4 }],
+        cveReferences: [{ id: 'CVE-2020-8203', score: 7.4, source: 'NVD' }],
       }),
     },
     {
@@ -72,7 +264,7 @@ const riskPatterns = {
         factors: [
           { label: 'SSRF Risk', detail: 'Server-side request forgery possible' },
         ],
-        cveReferences: [{ id: 'CVE-2023-45857', score: 6.5 }],
+        cveReferences: [{ id: 'CVE-2023-45857', score: 6.5, source: 'NVD' }],
       }),
     },
     {
@@ -117,6 +309,26 @@ const riskPatterns = {
     },
   ],
   saas_tool: [
+    {
+      condition: (asset: StackAsset) =>
+        asset.name.toLowerCase().includes('stalebot') ||
+        asset.identifier.includes('stalebot'),
+      generate: (asset: StackAsset): Partial<RiskFinding> => ({
+        level: 'critical',
+        score: 85,
+        headline: `Suspicious GitHub App detected: ${asset.name}`,
+        reasoning: `This GitHub App has repository access but shows signs of malicious behavior. It may be harvesting code or secrets from your repositories.`,
+        recommendation: `Immediately revoke this app's access. Rotate any secrets that may have been exposed. Audit repository access logs.`,
+        factors: [
+          { label: 'Repo access', detail: 'Can read repository contents' },
+          { label: 'Secret exposure', detail: 'May harvest environment variables' },
+        ],
+        iocMatches: ['ioc-github-stalebot'],
+        cveReferences: [
+          { id: 'GHSA-2026-stale', score: 8.9, source: 'GitHub Advisory' },
+        ],
+      }),
+    },
     {
       condition: (asset: StackAsset) => asset.name.toLowerCase().includes('slack') || asset.identifier.includes('slack'),
       generate: (asset: StackAsset): Partial<RiskFinding> => ({
@@ -174,40 +386,105 @@ const riskPatterns = {
 
 /**
  * Generate demo findings based on actual inventory items
+ * Now includes all required fields for Features 6-12:
+ * - timeline (Feature 6: Risk Timeline)
+ * - riskFactorBreakdown (Feature 8: Risk Factor Scoring Breakdown)
+ * - remediationRecommendations (Feature 9: Automated Remediation Recommendations)
+ * - detectedAt, remediationStatus (Feature 7: Remediation Scorecard)
  */
 export function generateDemoFindings(assets: StackAsset[]): RiskFinding[] {
   const findings: RiskFinding[] = []
-  
+  const now = new Date()
+
   for (const asset of assets) {
     const patterns = riskPatterns[asset.kind] || riskPatterns.saas_tool
-    
+
     // Find matching pattern or use default
     const matchingPattern = patterns.find(p => p.condition(asset))
     if (!matchingPattern) continue
-    
+
     const generated = matchingPattern.generate(asset)
-    
+    const score = generated.score || 50
+    const level = (generated.level || 'info') as RiskLevel
+
+    // Generate detection date (1-30 days ago)
+    const detectedAt = new Date(now)
+    detectedAt.setDate(now.getDate() - Math.floor(Math.random() * 30) - 1)
+
+    // Generate remediation status based on severity
+    const statusRoll = Math.random()
+    let remediationStatus: 'open' | 'in-progress' | 'resolved' = 'open'
+    let remediationDate: string | undefined
+
+    if (level === 'low' || level === 'info') {
+      // Low severity: 60% resolved, 30% in-progress, 10% open
+      if (statusRoll < 0.6) {
+        remediationStatus = 'resolved'
+        const resolved = new Date(detectedAt)
+        resolved.setDate(resolved.getDate() + Math.floor(Math.random() * 7) + 1)
+        remediationDate = resolved.toISOString()
+      } else if (statusRoll < 0.9) {
+        remediationStatus = 'in-progress'
+      }
+    } else if (level === 'medium') {
+      // Medium severity: 40% resolved, 40% in-progress, 20% open
+      if (statusRoll < 0.4) {
+        remediationStatus = 'resolved'
+        const resolved = new Date(detectedAt)
+        resolved.setDate(resolved.getDate() + Math.floor(Math.random() * 14) + 3)
+        remediationDate = resolved.toISOString()
+      } else if (statusRoll < 0.8) {
+        remediationStatus = 'in-progress'
+      }
+    } else {
+      // High/Critical: 20% resolved, 50% in-progress, 30% open
+      if (statusRoll < 0.2) {
+        remediationStatus = 'resolved'
+        const resolved = new Date(detectedAt)
+        resolved.setDate(resolved.getDate() + Math.floor(Math.random() * 5) + 1)
+        remediationDate = resolved.toISOString()
+      } else if (statusRoll < 0.7) {
+        remediationStatus = 'in-progress'
+      }
+    }
+
     const finding: RiskFinding = {
       assetId: asset.id,
       asset,
-      level: generated.level || 'info',
-      score: generated.score || 50,
+      level,
+      score,
       headline: generated.headline || `Security review for ${asset.name}`,
       reasoning: generated.reasoning || 'Standard security review required.',
       recommendation: generated.recommendation || 'Review access and permissions.',
       factors: generated.factors || [],
-      iocMatches: [],
+      iocMatches: generated.iocMatches || [],
       ticketStatus: 'none',
       alertStatus: 'none',
       cveReferences: generated.cveReferences,
+      // Feature 6: Risk Timeline
+      timeline: generateTimeline(asset, score, level),
+      // Feature 7: Remediation Scorecard data
+      detectedAt: detectedAt.toISOString(),
+      remediationStatus,
+      remediationDate,
+      // Feature 8: Risk Factor Scoring Breakdown
+      riskFactorBreakdown: generateRiskFactorBreakdown(score, asset.kind),
+      // Feature 9: Automated Remediation Recommendations
+      remediationRecommendations: generateRemediationSteps(asset, level),
+      // Feature 12: Risk Comparison metrics
+      comparisonMetrics: {
+        severityRank: Math.floor(Math.random() * 100) + 1,
+        affectedOrgs: Math.floor(Math.random() * 500) + 10,
+        timeToExploit: level === 'critical' ? '< 24 hours' : level === 'high' ? '1-7 days' : '> 7 days',
+      },
     }
-    
+
     findings.push(finding)
   }
-  
+
   // Sort by severity (critical first)
   const severityOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4 }
   findings.sort((a, b) => severityOrder[a.level] - severityOrder[b.level])
-  
+
   return findings
 }

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Radar, Menu, X } from "lucide-react"
 import { SettingsDialog } from "@/components/settings-dialog"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 
 export function SiteHeader() {
@@ -43,6 +44,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <SettingsDialog />
           <span className="hidden sm:flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1 text-xs">
             <span className="radar-pulse h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
