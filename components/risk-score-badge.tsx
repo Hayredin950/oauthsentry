@@ -43,7 +43,8 @@ export function RiskScoreBadge({
   score?: number
   className?: string
 }) {
-  const s = styles[level]
+  // Fallback to 'info' if level is undefined or not in styles
+  const s = styles[level] || styles.info
   return (
     <span
       className={cn(
