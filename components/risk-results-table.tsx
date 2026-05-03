@@ -34,6 +34,275 @@ const kindLabel: Record<AssetKind, string> = {
   saas_tool: "SaaS",
 }
 
+type Tab = "overview" | "analysis" | "actions"
+
+function FindingDetail({
+  f,
+  onFileTicket,
+  onSendAlert,
+}: {
+  f: RiskFinding
+  onFileTicket: (id: string) => void
+  onSendAlert: (id: string) => void
+}) {
+  const [tab, setTab] = useState<Tab>("overview")
+  const [remediationStatus, setRemediationStatus] = useState(f.remediationStatus ?? "open")
+  const [remediationDate, setRemediationDate] = useState("")
+
+  const tabs: { id: Tab; label: string }[] = [
+    { id: "overview", label: "Overview" },
+    { id: "analysis", label: "Analysis" },
+    { id: "actions", label: "Actions" },
+  ]
+
+  return (
+    <div className="border-t border-border bg-background/40">
+      {/* Tab bar */}
+      <div className="flex border-b border-border px-4">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={cn(
+              "px-3 py-2.5 text-xs font-medium border-b-2 -mb-px transition-colors",
+              tab === t.id
+                ? "border-primary text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="p-4">
+        {/* OVERVIEW TAB */}
+        {tab === "overview" && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Left: identifier + reasoning + recommendation */}
+            <div className="space-y-3">
+              <div>
+                <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Identifier</p>
+                <code className="block break-all rounded bg-muted px-2 py-1.5 font-mono text-xs">
+                  {f.asset.identifier}
+                </code>
+              </div>
+              <div>
+                <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Reasoning</p>
+                <p className="text-xs leading-relaxed text-foreground/90">{f.reasoning}</p>
+              </div>
+              <div>
+                <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Recommendation</p>
+                <p className="text-xs leading-relaxed text-foreground/90">{f.recommendation}</p>
+              </div>
+            </div>
+
+            {/* Right: risk factors + scopes + threat intel */}
+            <div className="space-y-3">
+              <div>
+                <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Risk Factors</p>
+                <ul className="space-y-1">
+                  {f.factors.map((factor, i) => (
+                    <li key={i} className="flex gap-2 text-xs">
+                      <span aria-hidden className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
+                      <span>
+                        <span className="font-medium">{factor.label}</span>
+                        <span className="block text-muted-foreground">{factor.detail}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {f.asset.scopes && f.asset.scopes.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Scopes</p>
+                  <div className="flex flex-wrap gap-1">
+                    {f.asset.scopes.map((s) => (
+                      <code key={s} className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">{s}</code>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {f.cveReferences && f.cveReferences.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Threat Intelligence</p>
+                  <div className="space-y-1">
+                    {f.cveReferences.map((ref, i) => (
+                      <div key={i} className="flex items-center gap-2 rounded bg-muted/60 px-2 py-1.5">
+                        <code className="font-mono text-xs font-semibold text-blue-600">{ref.id}</code>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-600 font-medium">
+                          CVSS {ref.score}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground flex-1">{ref.source}</span>
+                        <a
+                          href={`https://nvd.nist.gov/vuln/detail/${ref.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline text-[10px] flex items-center gap-0.5"
+                        >
+                          View <ExternalLink className="h-2.5 w-2.5" />
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ANALYSIS TAB */}
+        {tab === "analysis" && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Remediation steps */}
+            {f.remediationRecommendations && f.remediationRecommendations.length > 0 && (
+              <div>
+                <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-2">Remediation Steps</p>
+                <ul className="space-y-1.5">
+                  {f.remediationRecommendations.map((step, i) => (
+                    <li key={i} className="flex gap-2 text-xs">
+                      <span className="shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500/20 text-amber-600 font-bold text-[10px]">
+                        {i + 1}
+                      </span>
+                      <span className="text-foreground/90">{step}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {/* Risk Timeline */}
+              <RiskTimelineComponent timeline={f.timeline} detectedAt={f.detectedAt} />
+
+              {/* Scoring Breakdown */}
+              {f.riskFactorBreakdown && f.riskFactorBreakdown.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-2">Scoring Breakdown</p>
+                  <div className="space-y-1.5">
+                    {f.riskFactorBreakdown.map((item, i) => {
+                      const pct = Math.round((item.points / Math.max(f.score, 1)) * 100)
+                      return (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="w-32 text-[11px] text-muted-foreground truncate">{item.factor}</span>
+                          <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div className="h-full bg-amber-500/80" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-xs font-semibold w-6 text-right">{item.points}</span>
+                        </div>
+                      )
+                    })}
+                    <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                      <span className="text-[11px] font-mono text-muted-foreground">Total Score</span>
+                      <span className="text-xs font-bold">{f.score}/100</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ACTIONS TAB */}
+        {tab === "actions" && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-3">
+              {(f.level === "critical" || f.level === "high") && (
+                <div className="flex flex-wrap gap-2">
+                  <ActionButton
+                    status={f.ticketStatus ?? "none"}
+                    icon={Ticket}
+                    doneLabel="Ticket filed"
+                    label="File Linear ticket"
+                    onClick={() => onFileTicket(f.assetId)}
+                  />
+                  <ActionButton
+                    status={f.alertStatus ?? "none"}
+                    icon={MessageSquareWarning}
+                    doneLabel="Slack sent"
+                    label="Send Slack alert"
+                    onClick={() => onSendAlert(f.assetId)}
+                  />
+                </div>
+              )}
+
+              {/* False Positive */}
+              <div className="rounded-lg border border-border/60 bg-card/60 p-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    defaultChecked={f.isFalsePositive || false}
+                    className="w-4 h-4 rounded border-border cursor-pointer"
+                  />
+                  <span className="text-xs font-medium">Mark as false positive</span>
+                </label>
+              </div>
+
+              {/* Linked ticket */}
+              {f.linkedTicketUrl && (
+                <a
+                  href={f.linkedTicketUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  View in Linear
+                </a>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              {/* Remediation Status */}
+              <div className="rounded-lg border border-border/60 bg-card/60 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-muted-foreground">Remediation Status</p>
+                  <select
+                    value={remediationStatus}
+                    onChange={(e) => setRemediationStatus(e.target.value)}
+                    className="rounded bg-muted px-2 py-1 text-xs font-medium border border-border/60 cursor-pointer"
+                  >
+                    <option value="open">Open</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                  </select>
+                </div>
+                {(remediationStatus === "in-progress" || remediationStatus === "resolved") && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                      <input
+                        type="date"
+                        value={remediationDate}
+                        onChange={(e) => setRemediationDate(e.target.value)}
+                        className="rounded bg-muted px-2 py-1 text-xs border border-border/60"
+                      />
+                    </div>
+                    {remediationStatus === "resolved" && (
+                      <p className="flex items-center gap-1.5 text-xs text-green-600">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Marked as resolved
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Team Collaboration */}
+              {(f.level === "critical" || f.level === "high") && (
+                <TeamCollaboration findingId={f.assetId} linkedTicketUrl={f.linkedTicketUrl} />
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function RiskResultsTable({
   findings,
   onFileTicket,
@@ -44,8 +313,6 @@ export function RiskResultsTable({
   onSendAlert: (assetId: string) => void
 }) {
   const [open, setOpen] = useState<string | null>(findings[0]?.assetId ?? null)
-  const [remediationStatus, setRemediationStatus] = useState<Record<string, string>>({})
-  const [remediationDate, setRemediationDate] = useState<Record<string, string>>({})
 
   if (findings.length === 0) {
     return (
@@ -93,16 +360,12 @@ export function RiskResultsTable({
                         {kindLabel[f.asset.kind]}
                       </span>
                     </div>
-                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                      {f.headline}
-                    </p>
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">{f.headline}</p>
                   </div>
                 </div>
-
                 <div className="hidden sm:block">
                   <RiskScoreBadge level={f.level} score={f.score} />
                 </div>
-
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <span className="sm:hidden">
                     <RiskScoreBadge level={f.level} />
@@ -116,270 +379,11 @@ export function RiskResultsTable({
               </button>
 
               {isOpen && (
-                <div className="border-t border-border bg-background/40 px-4 py-4">
-                  <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-                          Identifier
-                        </h4>
-                        <code className="mt-1 block break-all rounded bg-muted px-2 py-1.5 font-mono text-xs">
-                          {f.asset.identifier}
-                        </code>
-                      </div>
-
-                      <div>
-                        <h4 className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-                          Reasoning
-                        </h4>
-                        <p className="mt-1 text-sm leading-relaxed text-foreground/90">
-                          {f.reasoning}
-                        </p>
-                      </div>
-
-                      <div>
-                        <h4 className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-                          Recommendation
-                        </h4>
-                        <p className="mt-1 text-sm leading-relaxed text-foreground/90">
-                          {f.recommendation}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-                          Risk factors
-                        </h4>
-                        <ul className="mt-1.5 space-y-1.5">
-                          {f.factors.map((factor, i) => (
-                            <li key={i} className="flex gap-2 text-xs">
-                              <span
-                                aria-hidden
-                                className="mt-1 h-1 w-1 shrink-0 rounded-full bg-primary"
-                              />
-                              <span>
-                                <span className="font-medium">{factor.label}</span>
-                                <span className="block text-muted-foreground">
-                                  {factor.detail}
-                                </span>
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {f.asset.scopes && f.asset.scopes.length > 0 && (
-                        <div>
-                          <h4 className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-                            Scopes
-                          </h4>
-                          <div className="mt-1.5 flex flex-wrap gap-1">
-                            {f.asset.scopes.map((s) => (
-                              <code
-                                key={s}
-                                className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]"
-                              >
-                                {s}
-                              </code>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Remediation Steps */}
-                      {f.remediationRecommendations && f.remediationRecommendations.length > 0 && (
-                        <div>
-                          <h4 className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
-                            Remediation Steps
-                          </h4>
-                          <ul className="space-y-1.5">
-                            {f.remediationRecommendations.map((step, i) => (
-                              <li key={i} className="flex gap-2 text-xs text-foreground">
-                                <span className="text-amber-600 font-semibold shrink-0">•</span>
-                                <span>{step}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* Risk Timeline */}
-                      <RiskTimelineComponent timeline={f.timeline} detectedAt={f.detectedAt} />
-
-                      {/* Risk Factor Scoring Breakdown */}
-                      {f.riskFactorBreakdown && f.riskFactorBreakdown.length > 0 && (
-                        <div>
-                          <h4 className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
-                            Scoring Breakdown
-                          </h4>
-                          <div className="space-y-1.5">
-                            {f.riskFactorBreakdown.map((item, i) => {
-                              const percentage = Math.round((item.points / f.score) * 100)
-                              return (
-                                <div key={i} className="flex items-center gap-2">
-                                  <div className="flex-1 flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground">{item.factor}</span>
-                                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                                      <div
-                                        className="h-full bg-amber-500/80"
-                                        style={{ width: `${percentage}%` }}
-                                      />
-                                    </div>
-                                  </div>
-                                  <span className="text-xs font-semibold text-foreground shrink-0">
-                                    {item.points}
-                                  </span>
-                                </div>
-                              )
-                            })}
-                            <div className="flex items-center justify-between pt-1 border-t border-border/40">
-                              <span className="text-xs font-mono text-muted-foreground">Total Score</span>
-                              <span className="text-xs font-bold">{f.score}/100</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Threat Intelligence Sources */}
-                      {f.cveReferences && f.cveReferences.length > 0 && (
-                        <div>
-                          <h4 className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-                            Threat Intelligence
-                          </h4>
-                          <div className="mt-1.5 space-y-1.5">
-                            {f.cveReferences.map((ref, i) => (
-                              <div key={i} className="flex items-start gap-2 rounded bg-muted/60 p-2">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <code className="font-mono text-xs font-semibold text-blue-600">
-                                      {ref.id}
-                                    </code>
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-700 font-medium">
-                                      CVSS {ref.score}
-                                    </span>
-                                    <span className="text-[10px] text-muted-foreground">
-                                      {ref.source}
-                                    </span>
-                                  </div>
-                                </div>
-                                <a
-                                  href={`https://nvd.nist.gov/vuln/detail/${ref.id}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:underline text-[10px] shrink-0"
-                                >
-                                  View
-                                </a>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {(f.level === "critical" || f.level === "high") && (
-                        <div className="space-y-3 pt-1">
-                          <div className="flex flex-wrap gap-2">
-                            <ActionButton
-                              status={f.ticketStatus ?? "none"}
-                              icon={Ticket}
-                              doneLabel="Ticket filed"
-                              label="File Linear ticket"
-                              onClick={() => onFileTicket(f.assetId)}
-                            />
-                            <ActionButton
-                              status={f.alertStatus ?? "none"}
-                              icon={MessageSquareWarning}
-                              doneLabel="Slack sent"
-                              label="Send Slack alert"
-                              onClick={() => onSendAlert(f.assetId)}
-                            />
-                          </div>
-
-                          {/* False Positive Flag */}
-                          <div className="rounded-lg border border-border/60 bg-background/60 p-3">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                defaultChecked={f.isFalsePositive || false}
-                                className="w-4 h-4 rounded border-border cursor-pointer"
-                              />
-                              <span className="text-xs font-medium text-muted-foreground">
-                                Mark as false positive
-                              </span>
-                            </label>
-                          </div>
-
-                          {/* Remediation Tracking */}
-                          <div className="rounded-lg border border-border/60 bg-background/60 p-3">
-                            <div className="flex items-center justify-between">
-                              <p className="text-xs font-medium text-muted-foreground">
-                                Remediation Status
-                              </p>
-                              <select
-                                value={remediationStatus[f.assetId] ?? "open"}
-                                onChange={(e) =>
-                                  setRemediationStatus({
-                                    ...remediationStatus,
-                                    [f.assetId]: e.target.value,
-                                  })
-                                }
-                                className="rounded bg-muted px-2 py-1 text-xs font-medium border border-border/60 cursor-pointer"
-                              >
-                                <option value="open">Open</option>
-                                <option value="in-progress">In Progress</option>
-                                <option value="resolved">Resolved</option>
-                              </select>
-                            </div>
-
-                            {(remediationStatus[f.assetId] === "in-progress" ||
-                              remediationStatus[f.assetId] === "resolved") && (
-                              <div className="mt-2 space-y-2">
-                                <div className="flex items-center gap-2 text-xs">
-                                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                                  <input
-                                    type="date"
-                                    value={remediationDate[f.assetId] ?? ""}
-                                    onChange={(e) =>
-                                      setRemediationDate({
-                                        ...remediationDate,
-                                        [f.assetId]: e.target.value,
-                                      })
-                                    }
-                                    className="rounded bg-muted px-2 py-1 text-xs border border-border/60"
-                                  />
-                                </div>
-                                {remediationStatus[f.assetId] === "resolved" && (
-                                  <p className="flex items-center gap-1.5 text-xs text-green-600">
-                                    <CheckCircle2 className="h-3.5 w-3.5" />
-                                    Marked as resolved
-                                  </p>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Linked Ticket */}
-                          {f.linkedTicketUrl && (
-                            <a
-                              href={f.linkedTicketUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                              View in Linear
-                            </a>
-                          )}
-
-                          {/* Team Collaboration */}
-                          <TeamCollaboration findingId={f.assetId} linkedTicketUrl={f.linkedTicketUrl} />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <FindingDetail
+                  f={f}
+                  onFileTicket={onFileTicket}
+                  onSendAlert={onSendAlert}
+                />
               )}
             </li>
           )

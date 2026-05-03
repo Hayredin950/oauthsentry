@@ -12,9 +12,17 @@ import type { RiskFinding, StackAsset } from "@/lib/types"
 import { RiskResultsTable } from "@/components/risk-results-table"
 import { IocFeed } from "@/components/ioc-feed"
 import { MetricsDashboard } from "@/components/metrics-dashboard"
+import { AlertModal } from "@/components/alert-modal"
 import { useScanStats } from "@/lib/scan-context"
 
 type ScanState = "idle" | "scanning" | "done" | "error"
+
+interface ModalState {
+  open: boolean
+  title: string
+  message: string
+  variant: "info" | "warning" | "error" | "success"
+}
 
 export function RiskScanner() {
   const [inventory, setInventory] = useState(seedInventoryText)
@@ -25,6 +33,11 @@ export function RiskScanner() {
   const [activeAssetName, setActiveAssetName] = useState<string | null>(null)
   const [lastScanTime, setLastScanTime] = useState<Date | null>(null)
   const [isDemo, setIsDemo] = useState(false)
+  const [modal, setModal] = useState<ModalState>({ open: false, title: "", message: "", variant: "info" })
+
+  const showModal = useCallback((title: string, message: string, variant: ModalState["variant"] = "info") => {
+    setModal({ open: true, title, message, variant })
+  }, [])
   const abortRef = useRef<AbortController | null>(null)
   const { updateStats, setScanning } = useScanStats()
   
@@ -210,7 +223,11 @@ export function RiskScanner() {
       // Get API key from localStorage (set via Settings dialog)
       const linearApiKey = localStorage.getItem("LINEAR_API_KEY")
       if (!linearApiKey) {
-        alert("Please configure your Linear API Key in Settings first.")
+        showModal(
+          "Linear API Key Required",
+          "Please configure your Linear API Key in Settings first. Go to Settings > Integrations > Linear API Key.",
+          "warning"
+        )
         return
       }
 
@@ -225,7 +242,7 @@ export function RiskScanner() {
         const data = await res.json()
         if (!data.success) {
           console.error('[v0] file ticket error:', data.error)
-          alert(`Failed to file ticket: ${data.error}`)
+          showModal("Failed to File Ticket", data.error || "An unexpected error occurred.", "error")
         }
       } catch (err) {
         console.error('[v0] file ticket fetch error:', err)
@@ -242,7 +259,11 @@ export function RiskScanner() {
       // Get webhook URL from localStorage (set via Settings dialog)
       const slackWebhookUrl = localStorage.getItem("SLACK_WEBHOOK_URL")
       if (!slackWebhookUrl) {
-        alert("Please configure your Slack Webhook URL in Settings first.")
+        showModal(
+          "Slack Webhook Required",
+          "Please configure your Slack Webhook URL in Settings first. Go to Settings > Integrations > Slack Webhook URL.",
+          "warning"
+        )
         return
       }
 
@@ -257,7 +278,7 @@ export function RiskScanner() {
         const data = await res.json()
         if (!data.success) {
           console.error('[v0] send alert error:', data.error)
-          alert(`Failed to send Slack alert: ${data.error}`)
+          showModal("Failed to Send Alert", data.error || "An unexpected error occurred.", "error")
         }
       } catch (err) {
         console.error('[v0] send alert fetch error:', err)
@@ -283,6 +304,14 @@ export function RiskScanner() {
   const inventoryItemCount = inventory.split("\n").filter((l) => l.trim() && !l.trim().startsWith("#")).length
 
   return (
+    <>
+    <AlertModal
+      open={modal.open}
+      title={modal.title}
+      message={modal.message}
+      variant={modal.variant}
+      onConfirm={() => setModal(m => ({ ...m, open: false }))}
+    />
     <section
       id="scan"
       className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-12 lg:px-10"
@@ -452,6 +481,7 @@ export function RiskScanner() {
         </div>
       </div>
     </section>
+    </>
   )
 }
 
