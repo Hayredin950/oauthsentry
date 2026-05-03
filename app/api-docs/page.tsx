@@ -334,7 +334,7 @@ export default function ApiDocumentation() {
   https://oauthsentry.vercel.app/api/scan`}</pre>
           </div>
           <div className="text-xs text-muted-foreground space-y-1">
-            <p><span className="font-mono bg-muted px-1 rounded">LINEAR_API_KEY</span> — Linear API key (from linear.app/settings/api)</p>
+            <p><span className="font-mono bg-muted px-1 rounded">LINEAR_API_KEY</span> — Linear API key (from linear.app/settings/account/security)</p>
             <p><span className="font-mono bg-muted px-1 rounded">SLACK_WEBHOOK_URL</span> — Slack Incoming Webhook URL</p>
             <p><span className="font-mono bg-muted px-1 rounded">KV_REST_API_URL / KV_REST_API_TOKEN</span> — Upstash Redis (for scheduled scans)</p>
           </div>
