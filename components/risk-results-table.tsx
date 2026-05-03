@@ -262,7 +262,7 @@ function FindingDetail({
                   <p className="text-xs font-medium text-muted-foreground">Remediation Status</p>
                   <select
                     value={remediationStatus}
-                    onChange={(e) => setRemediationStatus(e.target.value)}
+                    onChange={(e) => setRemediationStatus(e.target.value as "open" | "in-progress" | "resolved")}
                     className="rounded bg-muted px-2 py-1 text-xs font-medium border border-border/60 cursor-pointer"
                   >
                     <option value="open">Open</option>
