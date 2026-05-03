@@ -298,7 +298,7 @@ export default function ApiDocumentation() {
           </div>
           <p className="text-muted-foreground leading-relaxed">
             OAuthSentry exposes a REST API for programmatic scanning, live threat intelligence, Linear ticket filing, Slack alerting, and scheduled scan management. All endpoints are available at{" "}
-            <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">https://oauthsentry.vercel.app</code>.
+            <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">https://oauthsentry-phi.vercel.app</code>.
           </p>
         </div>
 
@@ -331,7 +331,7 @@ export default function ApiDocumentation() {
           <div className="rounded-md bg-muted p-3 overflow-x-auto">
             <pre className="text-xs font-mono text-foreground/90">{`curl -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
-  https://oauthsentry.vercel.app/api/scan`}</pre>
+  https://oauthsentry-phi.vercel.app/api/scan`}</pre>
           </div>
           <div className="text-xs text-muted-foreground space-y-1">
             <p><span className="font-mono bg-muted px-1 rounded">LINEAR_API_KEY</span> — Linear API key (from linear.app/settings/account/security)</p>
