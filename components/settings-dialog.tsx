@@ -254,12 +254,12 @@ export function SettingsDialog() {
               <p className="text-xs text-muted-foreground">
                 Get your key from{" "}
                 <a
-                  href="https://linear.app/settings/api"
+                  href="https://linear.app/settings/account/security"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"
                 >
-                  linear.app/settings/api
+                  linear.app/settings/account/security
                 </a>
               </p>
             </div>
@@ -375,9 +375,10 @@ export function SettingsDialog() {
               <div className="rounded-lg border border-border p-3 space-y-2">
                 <p className="text-xs font-medium">Linear API Key</p>
                 <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Go to Linear Settings {">"} API</li>
-                  <li>Click &quot;Create new API key&quot;</li>
-                  <li>Name it &quot;OAuthSentry&quot; and copy the key</li>
+                  <li>Go to Linear Settings {">"} Account {">"} Security</li>
+                  <li>Scroll to &quot;Personal API keys&quot;</li>
+                  <li>Click &quot;Create key&quot;, name it &quot;OAuthSentry&quot;</li>
+                  <li>Copy the generated key</li>
                 </ol>
               </div>
 
