@@ -126,7 +126,7 @@ Click **Export** on the dashboard to generate a multi-page PDF report including 
 | `POST` | `/api/workflow` | Trigger a durable WDK scan workflow |
 | `GET` | `/api/workflow/cron` | Vercel Cron endpoint (every 15 min) |
 
-Full API documentation: https://oauthsentry.vercel.app/api-docs
+Full API documentation: https://oauthsentry-phi.vercel.app/api-docs
 
 ### Data Flow
 ```

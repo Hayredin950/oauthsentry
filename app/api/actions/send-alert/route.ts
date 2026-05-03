@@ -28,7 +28,10 @@ export async function POST(req: Request) {
     }
     const finding = body.finding
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://oauthsentry.vercel.app'
+    // Use NEXT_PUBLIC_APP_URL if set, otherwise use VERCEL_URL, otherwise use the production URL
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL 
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+      || 'https://oauthsentry-phi.vercel.app'
     
     // Get severity emoji and color
     const severityConfig = {

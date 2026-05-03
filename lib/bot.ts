@@ -78,7 +78,9 @@ export async function postCriticalAlert(
       return
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://oauthsentry.vercel.app'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL 
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+      || 'https://oauthsentry-phi.vercel.app'
     const criticalFindings = findings.filter((f) => f.level === 'critical' || f.level === 'high')
 
     if (criticalFindings.length === 0) return
