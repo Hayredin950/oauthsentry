@@ -11,10 +11,24 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'OAuthSentry — Third-party AI & OAuth risk agent',
+  title: 'OAuthSentry — Find AI tools that breach you first',
   description:
-    'Continuously audits your organization\u2019s OAuth apps, third-party AI integrations, and supply-chain dependencies against live IOC feeds and breach disclosures. Built on Vercel WDK + ChatSDK + AI SDK 6. Inspired by the April 2026 Vercel/Context.ai incident.',
+    'Production-ready security agent that continuously scans OAuth apps, third-party AI integrations, and npm dependencies against live threat feeds. Automatically files Linear tickets and posts Slack alerts for critical findings. Built with Next.js 16, AI SDK 6, Workflow SDK, and Chat SDK.',
   generator: 'v0.app',
+  keywords: ['OAuth security', 'AI risk scanner', 'supply chain security', 'threat intelligence', 'Linear integration', 'Slack alerts', 'CVE monitoring'],
+  authors: [{ name: 'OAuthSentry Team' }],
+  openGraph: {
+    title: 'OAuthSentry — Find AI tools that breach you first',
+    description: 'Production-ready security agent that scans OAuth apps against live threat feeds. Files Linear tickets and Slack alerts automatically.',
+    type: 'website',
+    locale: 'en_US',
+    siteName: 'OAuthSentry',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'OAuthSentry — Find AI tools that breach you first',
+    description: 'Security agent that scans OAuth apps against live threat feeds. Auto-files Linear tickets and Slack alerts.',
+  },
   icons: {
     icon: [
       {

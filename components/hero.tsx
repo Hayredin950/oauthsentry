@@ -36,7 +36,7 @@ export function Hero() {
         </a>
 
         <h1 className="max-w-4xl text-balance text-2xl sm:text-3xl md:text-4xl lg:text-6xl xl:text-7xl font-semibold leading-[1.1] tracking-tight">
-          Find the third-party AI tool{" "}
+          Find the AI tool{" "}
           <span className="text-primary">that breaches you</span>
           <br className="hidden md:block" /> before it does.
         </h1>
