@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import useSWR from "swr"
 import { ExternalLink, Rss, RefreshCw, AlertCircle, Wifi, WifiOff } from "lucide-react"
 import { RiskScoreBadge } from "@/components/risk-score-badge"
@@ -34,6 +34,7 @@ function useNow() {
 }
 
 function formatRelative(dateInput: string | Date, now: number | null) {
+  // Return placeholder if now is not yet set (prerendering safety)
   if (now === null) return "..."
   const then = new Date(dateInput).getTime()
   const diff = Math.max(0, now - then)
@@ -149,9 +150,11 @@ export function IocFeed() {
               <li key={ioc.id} className="px-3 sm:px-4 py-3 hover:bg-muted/30 transition-colors">
                 <div className="mb-1.5 flex items-center justify-between gap-2">
                   <RiskScoreBadge level={ioc.severity} />
-                  <time className="font-mono text-[10px] sm:text-[11px] text-muted-foreground flex-shrink-0">
-                    {formatRelative(ioc.publishedAt, now)}
-                  </time>
+                  <Suspense fallback={<span className="text-[10px] text-muted-foreground">--</span>}>
+                    <time className="font-mono text-[10px] sm:text-[11px] text-muted-foreground flex-shrink-0">
+                      {formatRelative(ioc.publishedAt, now)}
+                    </time>
+                  </Suspense>
                 </div>
                 <h3 className="text-xs sm:text-sm font-medium leading-snug line-clamp-2">{ioc.title}</h3>
                 <p className="mt-1 line-clamp-2 text-[11px] sm:text-xs leading-relaxed text-muted-foreground">
@@ -186,16 +189,18 @@ export function IocFeed() {
       </div>
 
       {data?.fetchedAt && (
-        <div className="border-t border-border px-3 py-2 text-[10px] text-muted-foreground shrink-0">
-          <div className="flex items-center justify-between">
-            <span>Updated: {formatRelative(data.fetchedAt, now)}</span>
-            {data.sources && (
-              <span className="text-muted-foreground/70">
-                {data.sources.join(' + ')}
-              </span>
-            )}
+        <Suspense fallback={<div className="border-t border-border px-3 py-2 text-[10px] text-muted-foreground">--</div>}>
+          <div className="border-t border-border px-3 py-2 text-[10px] text-muted-foreground shrink-0">
+            <div className="flex items-center justify-between">
+              <span>Updated: {formatRelative(data.fetchedAt, now)}</span>
+              {data.sources && (
+                <span className="text-muted-foreground/70">
+                  {data.sources.join(' + ')}
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        </Suspense>
       )}
     </aside>
   )
