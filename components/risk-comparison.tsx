@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type { RiskFinding } from "@/lib/types"
-import { BarChart3, X } from "lucide-react"
+import { BarChart3, X, ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { RiskScoreBadge } from "@/components/risk-score-badge"
 
@@ -13,6 +13,15 @@ interface RiskComparisonProps {
 export function RiskComparison({ findings }: RiskComparisonProps) {
   const [selectedAssets, setSelectedAssets] = useState<string[]>([])
   const [isOpen, setIsOpen] = useState(false)
+  const [showAll, setShowAll] = useState(false)
+
+  // Auto-select first 5 findings for immediate visualization
+  useEffect(() => {
+    if (findings.length > 0) {
+      const topFindings = findings.slice(0, 5).map(f => f.assetId)
+      setSelectedAssets(topFindings)
+    }
+  }, [findings])
 
   const handleSelectAsset = (assetId: string) => {
     setSelectedAssets((prev) =>
@@ -24,7 +33,7 @@ export function RiskComparison({ findings }: RiskComparisonProps) {
     .map((id) => findings.find((f) => f.assetId === id))
     .filter(Boolean) as RiskFinding[]
 
-  const maxScore = Math.max(...comparisons.map((f) => f.score))
+  const maxScore = Math.max(...comparisons.map((f) => f.score), 100)
 
   return (
     <div className="space-y-3">

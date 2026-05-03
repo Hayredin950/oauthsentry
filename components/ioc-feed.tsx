@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react"
 import useSWR from "swr"
-import { ExternalLink, Rss, RefreshCw, AlertCircle } from "lucide-react"
-import { seedIOCs } from "@/lib/seed-data"
+import { ExternalLink, Rss, RefreshCw, AlertCircle, Wifi, WifiOff } from "lucide-react"
 import { RiskScoreBadge } from "@/components/risk-score-badge"
 import { Button } from "@/components/ui/button"
 
@@ -21,9 +20,22 @@ interface ThreatItem {
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
-function formatRelative(dateInput: string | Date) {
+// Custom hook to get current time safely (avoids prerender issues in Next.js 16)
+function useNow() {
+  const [now, setNow] = useState<number | null>(null)
+  
+  useEffect(() => {
+    setNow(Date.now())
+    const interval = setInterval(() => setNow(Date.now()), 60000)
+    return () => clearInterval(interval)
+  }, [])
+  
+  return now
+}
+
+function formatRelative(dateInput: string | Date, now: number | null) {
+  if (now === null) return "..."
   const then = new Date(dateInput).getTime()
-  const now = Date.now()
   const diff = Math.max(0, now - then)
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
   if (days >= 1) return `${days}d ago`
@@ -35,8 +47,8 @@ function formatRelative(dateInput: string | Date) {
 }
 
 const indicatorLabel: Record<string, string> = {
-  oauth_client_id: "OAuth client",
-  oauth_client: "OAuth client",
+  oauth_client_id: "OAuth",
+  oauth_client: "OAuth",
   domain: "Domain",
   package: "npm",
   npm: "npm",
@@ -45,25 +57,26 @@ const indicatorLabel: Record<string, string> = {
 }
 
 export function IocFeed() {
-  const [useLive, setUseLive] = useState(true)
-  const { data, error, isLoading, mutate } = useSWR<{ items: ThreatItem[], fetchedAt?: string }>(
-    useLive ? '/api/threat-feed' : null,
+  const now = useNow()
+  
+  // Always fetch from live API - no seeded fallback
+  const { data, error, isLoading, mutate } = useSWR<{ 
+    items: ThreatItem[]
+    sources?: string[]
+    fetchedAt?: string
+    message?: string 
+  }>(
+    '/api/threat-feed',
     fetcher,
     { 
-      refreshInterval: 5 * 60 * 1000, // Refresh every 5 minutes
-      revalidateOnFocus: false,
+      refreshInterval: 60000, // Auto-refresh every minute
+      revalidateOnFocus: true,
+      dedupingInterval: 30000,
     }
   )
 
-  // Use live data if available, otherwise fall back to seed data
-  const items: ThreatItem[] = useLive && data?.items?.length 
-    ? data.items 
-    : seedIOCs.map(ioc => ({
-        ...ioc,
-        publishedAt: ioc.publishedAt,
-      }))
-
-  const isLive = useLive && data?.items?.length && !error
+  const items = data?.items || []
+  const isLive = items.length > 0 && !error
 
   return (
     <aside
@@ -74,7 +87,7 @@ export function IocFeed() {
       <div className="flex items-center justify-between border-b border-border px-3 sm:px-4 py-3">
         <div className="flex items-center gap-2">
           <Rss className="h-4 w-4 text-primary flex-shrink-0" aria-hidden />
-          <h2 className="text-sm font-semibold tracking-tight">Threat feed</h2>
+          <h2 className="text-sm font-semibold tracking-tight">Threat Feed</h2>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -86,68 +99,102 @@ export function IocFeed() {
           >
             <RefreshCw className={`h-4 w-4 text-muted-foreground hover:text-foreground ${isLoading ? 'animate-spin' : ''}`} />
           </button>
-          <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-shrink-0">
-            <span className={`h-1.5 w-1.5 rounded-full ${isLive ? 'radar-pulse bg-primary' : 'bg-muted-foreground'}`} aria-hidden />
-            {isLive ? 'Live' : 'Demo'}
-          </span>
+          {isLive ? (
+            <span className="flex items-center gap-1.5 text-[10px] text-green-600 bg-green-500/10 px-1.5 py-0.5 rounded">
+              <Wifi className="h-3 w-3" />
+              LIVE
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-[10px] text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded">
+              <WifiOff className="h-3 w-3" />
+              {isLoading ? 'CONNECTING' : 'OFFLINE'}
+            </span>
+          )}
         </div>
       </div>
 
       {error && (
         <div className="px-3 py-2 bg-destructive/10 border-b border-border flex items-center gap-2 text-[11px] text-destructive">
           <AlertCircle className="h-3 w-3 flex-shrink-0" />
-          <span>Using cached data - API unavailable</span>
-          <button 
-            onClick={() => setUseLive(false)}
-            className="ml-auto underline hover:no-underline"
-          >
-            Use demo
-          </button>
+          <span>Unable to fetch live data - APIs may be rate-limited</span>
         </div>
       )}
 
-      <ol className="flex-1 divide-y divide-border overflow-y-auto overflow-x-hidden">
-        {items.map((ioc) => (
-          <li key={ioc.id} className="px-3 sm:px-4 py-3">
-            <div className="mb-1.5 flex items-center justify-between gap-2">
-              <RiskScoreBadge level={ioc.severity} />
-              <time className="font-mono text-[10px] sm:text-[11px] text-muted-foreground flex-shrink-0">
-                {formatRelative(ioc.publishedAt)}
-              </time>
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+        {isLoading && items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 px-4 py-12 text-center">
+            <RefreshCw className="h-6 w-6 animate-spin text-primary" />
+            <div>
+              <p className="text-sm font-medium">Fetching Live Threats</p>
+              <p className="text-xs text-muted-foreground mt-1">Connecting to NVD, OSV, GitHub Security...</p>
             </div>
-            <h3 className="text-xs sm:text-sm font-medium leading-snug line-clamp-2">{ioc.title}</h3>
-            <p className="mt-1 line-clamp-2 text-[11px] sm:text-xs leading-relaxed text-muted-foreground">
-              {ioc.summary}
-            </p>
-            <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
-              <code className="block truncate max-w-full rounded bg-muted px-1.5 py-0.5 font-mono text-[9px] sm:text-[10px] text-muted-foreground">
-                <span className="text-foreground/80">
-                  {indicatorLabel[ioc.indicatorKind] || ioc.indicatorKind}:
-                </span>{" "}
-                {ioc.indicator}
-              </code>
-              <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground truncate">
-                {ioc.source}
-              </span>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 px-4 py-12 text-center">
+            <AlertCircle className="h-6 w-6 text-amber-500" />
+            <div>
+              <p className="text-sm font-medium">No Live Data Available</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-[220px]">
+                {data?.message || "External APIs may be rate-limited. Click refresh to try again."}
+              </p>
             </div>
-            {ioc.reference && (
-              <a
-                href={ioc.reference}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
-              >
-                Source
-                <ExternalLink className="h-3 w-3 flex-shrink-0" aria-hidden />
-              </a>
-            )}
-          </li>
-        ))}
-      </ol>
+            <Button variant="outline" size="sm" onClick={() => mutate()} className="mt-2">
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+              Retry
+            </Button>
+          </div>
+        ) : (
+          <ol className="divide-y divide-border">
+            {items.map((ioc) => (
+              <li key={ioc.id} className="px-3 sm:px-4 py-3 hover:bg-muted/30 transition-colors">
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <RiskScoreBadge level={ioc.severity} />
+                  <time className="font-mono text-[10px] sm:text-[11px] text-muted-foreground flex-shrink-0">
+                    {formatRelative(ioc.publishedAt, now)}
+                  </time>
+                </div>
+                <h3 className="text-xs sm:text-sm font-medium leading-snug line-clamp-2">{ioc.title}</h3>
+                <p className="mt-1 line-clamp-2 text-[11px] sm:text-xs leading-relaxed text-muted-foreground">
+                  {ioc.summary}
+                </p>
+                <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
+                  <code className="block truncate max-w-full rounded bg-muted px-1.5 py-0.5 font-mono text-[9px] sm:text-[10px] text-muted-foreground">
+                    <span className="text-foreground/80">
+                      {indicatorLabel[ioc.indicatorKind] || ioc.indicatorKind}:
+                    </span>{" "}
+                    {ioc.indicator}
+                  </code>
+                  <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground truncate">
+                    {ioc.source}
+                  </span>
+                </div>
+                {ioc.reference && (
+                  <a
+                    href={ioc.reference}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                  >
+                    View Details
+                    <ExternalLink className="h-3 w-3 flex-shrink-0" aria-hidden />
+                  </a>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
 
       {data?.fetchedAt && (
-        <div className="border-t border-border px-3 py-2 text-[10px] text-muted-foreground">
-          Last updated: {formatRelative(data.fetchedAt)} from NVD, OSV, GitHub
+        <div className="border-t border-border px-3 py-2 text-[10px] text-muted-foreground shrink-0">
+          <div className="flex items-center justify-between">
+            <span>Updated: {formatRelative(data.fetchedAt, now)}</span>
+            {data.sources && (
+              <span className="text-muted-foreground/70">
+                {data.sources.join(' + ')}
+              </span>
+            )}
+          </div>
         </div>
       )}
     </aside>

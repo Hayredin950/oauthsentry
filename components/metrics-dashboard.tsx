@@ -157,13 +157,13 @@ export function MetricsDashboard({ findings, assetsScanned, lastUpdated }: Metri
         </p>
       </div>
 
-      {/* Remediation Scorecard */}
-      <RemediationScorecard findings={findings} />
+      {/* Remediation Scorecard - Always show when there are findings */}
+      {total > 0 && <RemediationScorecard findings={findings} />}
 
-      {/* Risk Comparison */}
-      <RiskComparison findings={findings} />
+      {/* Risk Comparison - Always show when there are findings */}
+      {total > 0 && <RiskComparison findings={findings} />}
 
-      {/* Scheduled Scans */}
+      {/* Scheduled Scans - Always show */}
       <ScheduledScans />
 
       {/* Export Report */}

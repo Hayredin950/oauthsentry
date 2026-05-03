@@ -37,7 +37,7 @@ export function TeamCollaboration({ findingId, linkedTicketUrl }: TeamCollaborat
   ])
 
   const [newComment, setNewComment] = useState("")
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(true) // Show expanded by default
 
   const handleAddComment = () => {
     if (newComment.trim()) {
