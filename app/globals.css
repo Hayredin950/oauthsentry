@@ -3,8 +3,48 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Light theme (default) */
 :root {
-  /* Dark-mode-first: these are the dark values. We don't ship a light theme. */
+  --background: oklch(0.98 0.002 90);
+  --foreground: oklch(0.13 0.01 90);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.13 0.01 90);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.13 0.01 90);
+  --primary: oklch(0.65 0.18 78);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.94 0.005 90);
+  --secondary-foreground: oklch(0.13 0.01 90);
+  --muted: oklch(0.94 0.005 90);
+  --muted-foreground: oklch(0.45 0.01 90);
+  --accent: oklch(0.94 0.005 90);
+  --accent-foreground: oklch(0.13 0.01 90);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.88 0.005 90);
+  --input: oklch(0.88 0.005 90);
+  --ring: oklch(0.65 0.18 78);
+
+  /* Risk-level chart tokens: critical, high, medium, low, info */
+  --chart-1: oklch(0.55 0.22 25);    /* red - critical */
+  --chart-2: oklch(0.68 0.18 55);    /* orange - high */
+  --chart-3: oklch(0.75 0.16 90);    /* yellow - medium */
+  --chart-4: oklch(0.55 0.12 220);   /* blue - low */
+  --chart-5: oklch(0.55 0.01 90);    /* gray - info */
+
+  --radius: 0.5rem;
+  --sidebar: oklch(0.96 0.002 90);
+  --sidebar-foreground: oklch(0.13 0.01 90);
+  --sidebar-primary: oklch(0.65 0.18 78);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.94 0.005 90);
+  --sidebar-accent-foreground: oklch(0.13 0.01 90);
+  --sidebar-border: oklch(0.88 0.005 90);
+  --sidebar-ring: oklch(0.65 0.18 78);
+}
+
+/* Dark theme */
+.dark {
   --background: oklch(0.13 0.005 90);
   --foreground: oklch(0.97 0.005 90);
   --card: oklch(0.16 0.006 90);
@@ -32,7 +72,6 @@
   --chart-4: oklch(0.72 0.1 220);    /* blue - low */
   --chart-5: oklch(0.66 0.01 90);    /* gray - info */
 
-  --radius: 0.5rem;
   --sidebar: oklch(0.15 0.005 90);
   --sidebar-foreground: oklch(0.97 0.005 90);
   --sidebar-primary: oklch(0.82 0.16 78);
@@ -109,6 +148,14 @@
   scrollbar-color: oklch(0.28 0.005 90) transparent;
 }
 
+.dark * {
+  scrollbar-color: oklch(0.28 0.005 90) transparent;
+}
+
+:root:not(.dark) * {
+  scrollbar-color: oklch(0.78 0.005 90) transparent;
+}
+
 *::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -122,6 +169,10 @@
   background: oklch(0.28 0.005 90);
   border-radius: 99px;
   transition: background 0.2s;
+}
+
+:root:not(.dark) *::-webkit-scrollbar-thumb {
+  background: oklch(0.78 0.005 90);
 }
 
 *::-webkit-scrollbar-thumb:hover {
