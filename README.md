@@ -1,132 +1,171 @@
-# OAuthSentry — Third-Party AI & OAuth Risk Agent
+<div align="center">
+  <img src="public/icon.svg" alt="OAuthSentry Logo" width="120" height="120" style="border-radius: 20px;">
+  <h1 align="center">OAuthSentry</h1>
+  <p align="center">
+    <strong>Third-Party AI & OAuth Risk Agent</strong>
+    <br>
+    Find the third-party AI tool that breaches you before it does
+  </p>
+  
+  <p align="center">
+    <a href="https://oauthsentry-phi.vercel.app" target="_blank">
+      <img src="https://img.shields.io/badge/Live_Demo-Access_Now-brightgreen?style=for-the-badge&logo=vercel" alt="Live Demo">
+    </a>
+    <a href="https://github.com/Hayredin950/oauthsentry" target="_blank">
+      <img src="https://img.shields.io/badge/GitHub-View_Repository-181717?style=for-the-badge&logo=github" alt="GitHub">
+    </a>
+    <a href="LICENSE" target="_blank">
+      <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License">
+    </a>
+  </p>
 
-> Find the third-party AI tool that breaches you before it does.
+  <div align="center">
+    <img src="https://img.shields.io/badge/Next.js-000000?style=flat&logo=next.js&logoColor=white" alt="Next.js">
+    <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white" alt="TypeScript">
+    <img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat&logo=tailwind-css&logoColor=white" alt="Tailwind CSS">
+    <img src="https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white" alt="Vercel">
+    <img src="https://img.shields.io/badge/OpenAI-412991?style=flat&logo=openai&logoColor=white" alt="OpenAI">
+  </div>
+</div>
 
-OAuthSentry is a production-ready security agent that continuously scans your organization's OAuth apps, third-party AI integrations, and npm dependencies against live IOC threat feeds. High-risk findings automatically file Linear tickets and send Slack alerts in real-time.
+<br>
 
-**Built for:** Security teams protecting against supply-chain attacks and compromised AI tool integrations.
+## 📖 Table of Contents
 
----
+- [About](#-about)
+- [Problem Statement](#-problem-statement)
+- [Features](#-features)
+- [Tech Stack](#️-tech-stack)
+- [Getting Started](#-getting-started)
+- [API Documentation](#-api-documentation)
+- [Architecture](#-architecture)
+- [Deployment](#-deployment)
+- [Troubleshooting](#-troubleshooting)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Contact](#-contact)
 
-## What OAuthSentry Does
+## 🎯 About
 
-### The Problem
+OAuthSentry is a production-ready security agent that continuously scans your organization's OAuth apps, third-party AI integrations, and npm dependencies against live IOC threat feeds. High-risk findings automatically file Linear tickets and send Slack alerts in real-time. Built for security teams protecting against supply-chain attacks and compromised AI tool integrations.
+
+## ⚠️ Problem Statement
+
 After the April 2026 Vercel/Context.ai incident where a compromised OAuth app pivoted into employee Google Workspace accounts, security teams need continuous monitoring of:
 - OAuth apps with excessive permissions
 - Third-party AI integrations with admin scopes
 - Malicious npm packages (typosquats, backdoors)
 - Vendor trust changes and abandoned projects
 
-### The Solution
-OAuthSentry:
-1. **Scans** your assets (OAuth apps, npm packages, SaaS tools) using AI
-2. **Scores** findings 0–100 with IOC matching and detailed reasoning
-3. **Files** Linear tickets automatically for critical risks
-4. **Alerts** your team in Slack with rich, actionable messages
-5. **Monitors** 24/7 with scheduled scans persisted in Upstash Redis
-6. **Shows** live threat intelligence from NVD, OSV, and GitHub Security Advisories
+## ✨ Features
 
----
+| Feature | Description |
+|---------|-------------|
+| **🔍 AI-Powered Scanning** | Scan OAuth apps, npm packages, and SaaS tools using GPT-4o-mini |
+| **📊 Risk Scoring** | 0–100 scoring with IOC matching and detailed reasoning |
+| **🎫 Linear Integration** | Auto-file tickets for critical findings |
+| **💬 Slack Alerts** | Rich Block Kit messages with actionable remediation steps |
+| **⏰ Scheduled Scans** | 24/7 monitoring persisted in Upstash Redis |
+| **📡 Live Threat Feed** | Real-time intel from NVD, OSV, and GitHub Security Advisories |
+| **📄 PDF Export** | Comprehensive reports with executive summaries |
+| **🌓 Dark/Light Mode** | Beautiful UI with theme toggle |
+| **🧪 Demo Mode** | Instantly load realistic findings without API calls |
+| **⚡ Real-time Streaming** | NDJSON streaming of scan results |
 
-## Quick Start
+## 🛠️ Tech Stack
 
-### 1. Clone and install
-```bash
-git clone https://github.com/HayreKhan750/oauthsentry
-cd oauthsentry
-pnpm install
-```
+### Frontend
+- **Framework**: Next.js 16 App Router
+- **Styling**: Tailwind CSS v4
+- **UI Components**: shadcn/ui
+- **Type Safety**: TypeScript
 
-### 2. Set environment variables
-Create a `.env.local` file:
-```env
-# Required — Vercel AI Gateway (for scan AI analysis)
-AI_GATEWAY_API_KEY=your_vercel_ai_gateway_key
+### Backend & AI
+- **AI SDK**: Vercel AI SDK 6
+- **Model**: OpenAI GPT-4o-mini (via AI Gateway)
+- **Workflows**: Vercel Workflow Development Kit (WDK)
+- **Storage**: Upstash Redis
+- **APIs**: REST & GraphQL
 
-# Optional — Linear integration (file tickets from findings)
-LINEAR_API_KEY=your_linear_api_key
+### Integrations
+- **Linear**: GraphQL API for ticket filing
+- **Slack**: Incoming Webhooks for alerts
+- **Threat Feeds**: NVD, OSV, GitHub Security Advisories
 
-# Optional — Slack integration (send alerts from findings)
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+### Deployment
+- **Hosting**: Vercel
+- **Cron**: Vercel Cron Jobs
 
-# Required for scheduled scans — Upstash Redis
-KV_REST_API_URL=your_upstash_redis_url
-KV_REST_API_TOKEN=your_upstash_redis_token
+## 🚀 Getting Started
 
-# Optional — used in Slack alert links
-NEXT_PUBLIC_APP_URL=https://your-deployment.vercel.app
-```
+### Prerequisites
+- Node.js 18+
+- pnpm or npm
+- Vercel account (for deployment)
+- OpenAI API key (via Vercel AI Gateway)
 
-> **Note:** Linear and Slack keys can also be configured at runtime through the Settings dialog in the app UI — no redeployment needed.
+### Installation
 
-### 3. Run locally
-```bash
-pnpm dev
-```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Hayredin950/oauthsentry.git
+   cd oauthsentry
+   ```
 
-Open http://localhost:3000
+2. **Install dependencies**
+   ```bash
+   pnpm install
+   # or
+   npm install
+   ```
 
----
+3. **Configure environment variables**
+   Create a `.env.local` file:
+   ```env
+   # Required — Vercel AI Gateway
+   AI_GATEWAY_API_KEY=your_vercel_ai_gateway_key
 
-## Features
+   # Optional — Linear integration
+   LINEAR_API_KEY=your_linear_api_key
 
-### Demo Mode
-Click **Demo Mode** to instantly load 5 realistic findings (Context.ai, stalebot-pro, clipboardz, MeetScribe AI, evalrunner) without running a live AI scan. All 15 features work with demo data.
+   # Optional — Slack integration
+   SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
 
-### Live Scan
-Click **Run Scan** to scan real assets using the AI agent (`/api/scan`). The AI analyzes each asset against IOC feeds and security advisories, streaming findings in real-time via NDJSON.
+   # Required for scheduled scans — Upstash Redis
+   KV_REST_API_URL=your_upstash_redis_url
+   KV_REST_API_TOKEN=your_upstash_redis_token
 
-### Threat Intelligence Feed
-Live feed sourced from:
-- **NVD** (National Vulnerability Database) — recent HIGH/CRITICAL CVEs
-- **OSV** (Google Open Source Vulnerabilities) — npm ecosystem advisories
-- **GitHub Security Advisories** — GHSA records for high/critical issues
+   # Optional — App URL for links in alerts
+   NEXT_PUBLIC_APP_URL=https://your-deployment.vercel.app
+   ```
 
-No seeded or hardcoded data — if APIs are unavailable, a retry message is shown.
+   > **Note**: Linear and Slack keys can also be configured at runtime through the Settings dialog — no redeployment needed!
 
-### Linear Integration
-Set your Linear API key in Settings → click **File Linear ticket** on any finding → a detailed issue is created in your Linear workspace with severity, score, reasoning, risk factors, and remediation steps.
+4. **Run the development server**
+   ```bash
+   pnpm dev
+   # or
+   npm run dev
+   ```
 
-### Slack Integration
-Set your Slack Webhook URL in Settings → click **Send Slack alert** on any finding → a rich Block Kit message is posted with asset details, score, severity, remediation steps, and action buttons.
+5. **Open the application**
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
-### Scheduled Scans
-Create daily/weekly/monthly scan schedules through the UI. Schedules are persisted to Upstash Redis. A Vercel Cron job fires every 15 minutes to execute any due schedules. Use **Run Now** to trigger a schedule immediately.
+## 📚 API Documentation
 
-### PDF Export
-Click **Export** on the dashboard to generate a multi-page PDF report including cover page, executive summary, full findings table, CVE references, and remediation recommendations.
+Full API documentation available at: [https://oauthsentry-phi.vercel.app/api-docs](https://oauthsentry-phi.vercel.app/api-docs)
 
----
+### Key Endpoints
 
-## Architecture
-
-### Tech Stack
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js 16 App Router + Tailwind CSS v4 |
-| AI | Vercel AI SDK 6 + AI Gateway (`openai/gpt-4o-mini`) |
-| Workflows | Vercel WDK (durable, resumable scan orchestration) |
-| Storage | Upstash Redis (scheduled scans) |
-| Integrations | Linear GraphQL API + Slack Incoming Webhooks |
-| Threat Feeds | NVD REST API + OSV API + GitHub Security REST API |
-| Hosting | Vercel |
-
-### API Routes
 | Method | Path | Purpose |
-|---|---|---|
-| `POST` | `/api/scan` | AI-powered streaming scan — returns NDJSON findings |
-| `GET` | `/api/threat-feed` | Live threat intelligence from NVD, OSV, GitHub |
-| `POST` | `/api/actions/file-ticket` | Create Linear issue for a finding |
-| `POST` | `/api/actions/send-alert` | Send Slack alert for a finding |
-| `GET` | `/api/scheduled-scans` | List all saved scan schedules (Upstash) |
-| `POST` | `/api/scheduled-scans` | Create a new schedule (Upstash) |
-| `PUT` | `/api/scheduled-scans` | Update/toggle a schedule |
-| `DELETE` | `/api/scheduled-scans` | Delete a schedule |
-| `POST` | `/api/scheduled-scans/execute` | Run a specific or all due schedules |
-| `POST` | `/api/workflow` | Trigger a durable WDK scan workflow |
-| `GET` | `/api/workflow/cron` | Vercel Cron endpoint (every 15 min) |
+|--------|------|---------|
+| `POST` | `/api/scan` | AI-powered streaming scan (NDJSON) |
+| `GET` | `/api/threat-feed` | Live threat intelligence |
+| `POST` | `/api/actions/file-ticket` | Create Linear issue |
+| `POST` | `/api/actions/send-alert` | Send Slack alert |
+| `GET/POST/PUT/DELETE` | `/api/scheduled-scans` | Manage scan schedules |
 
-Full API documentation: https://oauthsentry-phi.vercel.app/api-docs
+## 🏗️ Architecture
 
 ### Data Flow
 ```
@@ -147,81 +186,94 @@ User clicks "Send alert" → POST /api/actions/send-alert
 Rich Block Kit message posted to Slack webhook
 ```
 
-### File Structure
+### Project Structure
 ```
-app/
-  layout.tsx                         Root layout + ThemeProvider
-  page.tsx                           Main dashboard
-  globals.css                        Tailwind v4 + design tokens
-  api-docs/page.tsx                  API documentation page
-  api/
-    scan/route.ts                    AI scan agent (streaming NDJSON)
-    threat-feed/route.ts             Live NVD + OSV + GitHub feed
-    actions/
-      file-ticket/route.ts           Linear ticket filing
-      send-alert/route.ts            Slack alert posting
-    scheduled-scans/
-      route.ts                       CRUD for Upstash-backed schedules
-      execute/route.ts               Execute due scans + Cron handler
-    workflow/
-      route.ts                       WDK durable workflow
-      cron/route.ts                  Vercel Cron trigger
-
-lib/
-  types.ts                           TypeScript types
-  linear-client.ts                   Linear GraphQL client
-  risk-knowledge.ts                  IOC feeds + vendor advisories
-  risk-schema.ts                     Zod schema for AI output
-  generate-demo-findings.ts          Demo mode data
-  scan-context.tsx                   React context for scan state
-  seed-data.ts                       IOC seed data for risk analysis
-
-components/
-  site-header.tsx                    Sticky header + navigation
-  hero.tsx                           Landing hero section
-  risk-scanner.tsx                   Main scan form + asset inventory
-  risk-results-table.tsx             Findings table with all features
-  metrics-dashboard.tsx              Summary metrics + charts
-  ioc-feed.tsx                       Live threat feed sidebar
-  risk-timeline.tsx                  Finding risk progression
-  remediation-scorecard.tsx          Remediation stats
-  risk-comparison.tsx                Side-by-side asset comparison
-  team-collaboration.tsx             Comments + @mentions
-  scheduled-scans.tsx                Schedule management UI
-  export-report.tsx                  PDF/JSON/TXT export
-  settings-dialog.tsx                Linear + Slack API key config
-  theme-toggle.tsx                   Dark/light mode switch
+oauthsentry/
+├── app/
+│   ├── layout.tsx               # Root layout + ThemeProvider
+│   ├── page.tsx                 # Main dashboard
+│   ├── globals.css              # Tailwind v4 + design tokens
+│   ├── api-docs/page.tsx        # API documentation
+│   └── api/
+│       ├── scan/route.ts        # AI scan agent
+│       ├── threat-feed/route.ts # Threat intel feed
+│       ├── actions/
+│       │   ├── file-ticket/
+│       │   └── send-alert/
+│       ├── scheduled-scans/
+│       └── workflow/
+├── components/
+│   ├── ui/                      # shadcn/ui components
+│   ├── hero.tsx
+│   ├── risk-scanner.tsx
+│   ├── risk-results-table.tsx
+│   └── ...
+├── lib/
+│   ├── types.ts
+│   ├── linear-client.ts
+│   ├── risk-knowledge.ts
+│   └── ...
+├── public/
+├── package.json
+├── tsconfig.json
+└── vercel.json
 ```
 
----
-
-## Deployment
+## 🚀 Deployment
 
 ### Deploy to Vercel
-```bash
-vercel deploy
-```
 
-Set the environment variables above in Vercel Project Settings → Environment Variables.
+1. **Deploy via Vercel CLI**
+   ```bash
+   vercel
+   ```
+
+2. **Set environment variables** in Vercel Project Settings → Environment Variables.
+
+3. **Required Integration**: Add **Upstash for Redis** via Vercel Marketplace for scheduled scans.
 
 The `vercel.json` includes a Cron job that fires `/api/scheduled-scans/execute` every 15 minutes to run due schedules.
 
-### Required Vercel Integrations
-- **Upstash for Redis** — for scheduled scan persistence (add via Vercel Marketplace)
-
----
-
-## Troubleshooting
+## 🔧 Troubleshooting
 
 | Issue | Solution |
-|---|---|
-| Scan not running | Check `AI_GATEWAY_API_KEY` is set in environment variables |
-| Linear tickets not created | Enter your Linear API key in Settings dialog or set `LINEAR_API_KEY` env var |
-| Slack alerts not posting | Enter your Slack Webhook URL in Settings dialog or set `SLACK_WEBHOOK_URL` env var |
-| Threat feed shows no data | External APIs (NVD, GitHub) may be rate-limited — feed retries automatically |
-| Scheduled scans not running | Verify Upstash Redis integration is connected (`KV_REST_API_URL` + `KV_REST_API_TOKEN`) |
-| Build errors | Run `pnpm build` locally to identify TypeScript errors before deploying |
+|-------|----------|
+| Scan not running | Verify `AI_GATEWAY_API_KEY` is set |
+| Linear tickets not created | Check Linear API key in Settings or env var |
+| Slack alerts not posting | Ensure Slack Webhook URL is configured |
+| Threat feed empty | External APIs may be rate-limited — auto-retry enabled |
+| Scheduled scans failing | Confirm Upstash Redis integration is active |
+| Build errors | Run `pnpm build` locally to debug TypeScript issues |
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+## 📬 Contact
+
+**Hayredin** - [hayredin.950@gmail.com](mailto:hayredin.950@gmail.com)
+
+Project Link: [https://github.com/Hayredin950/oauthsentry](https://github.com/Hayredin950/oauthsentry)
+
+Live Demo: [https://oauthsentry-phi.vercel.app](https://oauthsentry-phi.vercel.app)
 
 ---
 
-Built with Vercel AI SDK 6, Next.js 16, Workflow Development Kit, Upstash Redis, Linear, and Slack.
+<div align="center">
+  <p>
+    Built with ❤️ by <a href="https://github.com/Hayredin950">Hayredin</a>
+  </p>
+  <p>
+    © 2026 OAuthSentry. All rights reserved.
+  </p>
+</div>
